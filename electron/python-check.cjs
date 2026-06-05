@@ -6,6 +6,7 @@ const fs = require('fs')
 const PYTHON_PATHS = [
   'python',
   'python3',
+  path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python314', 'python.exe'),
   path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python313', 'python.exe'),
   path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python312', 'python.exe'),
   path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python311', 'python.exe'),
@@ -14,25 +15,28 @@ const PYTHON_PATHS = [
 function findPython() {
   for (const pythonPath of PYTHON_PATHS) {
     try {
-      const result = execSync(`"${pythonPath}" --version`, { encoding: 'utf-8', timeout: 5000 })
+      const cmd = pythonPath.includes(' ') ? `"${pythonPath}" --version` : `${pythonPath} --version`
+      const result = execSync(cmd, {
+        encoding: 'utf-8',
+        timeout: 5000,
+        windowsHide: true,
+        shell: true,
+      })
       if (result.includes('Python 3')) return pythonPath
     } catch {}
   }
   return null
 }
 
-function isPythonInstalled() {
-  return findPython() !== null
-}
-
-function areDependenciesInstalled(backendDir) {
-  const python = findPython()
-  if (!python) return false
+function areDependenciesInstalled(python, backendDir) {
   try {
-    execSync(`"${python}" -c "import fastapi; import playwright"`, {
+    const cmd = python.includes(' ') ? `"${python}"` : python
+    execSync(`${cmd} -c "import fastapi; import uvicorn"`, {
       encoding: 'utf-8',
       timeout: 10000,
       cwd: backendDir,
+      windowsHide: true,
+      shell: true,
     })
     return true
   } catch {
@@ -40,21 +44,31 @@ function areDependenciesInstalled(backendDir) {
   }
 }
 
-function installDependencies(backendDir) {
-  const python = findPython()
-  if (!python) return false
+function installDependencies(python, backendDir) {
+  const cmd = python.includes(' ') ? `"${python}"` : python
   try {
     const requirementsPath = path.join(backendDir, 'requirements.txt')
     if (fs.existsSync(requirementsPath)) {
-      execSync(`"${python}" -m pip install -r "${requirementsPath}" --quiet`, {
+      execSync(`${cmd} -m pip install -r "${requirementsPath}" --quiet`, {
         encoding: 'utf-8',
-        timeout: 120000,
+        timeout: 180000,
         cwd: backendDir,
+        windowsHide: true,
+        shell: true,
+      })
+    } else {
+      execSync(`${cmd} -m pip install fastapi uvicorn playwright pydantic --quiet`, {
+        encoding: 'utf-8',
+        timeout: 180000,
+        windowsHide: true,
+        shell: true,
       })
     }
-    execSync(`"${python}" -m playwright install chromium`, {
+    execSync(`${cmd} -m playwright install chromium`, {
       encoding: 'utf-8',
-      timeout: 120000,
+      timeout: 180000,
+      windowsHide: true,
+      shell: true,
     })
     return true
   } catch {
@@ -63,46 +77,53 @@ function installDependencies(backendDir) {
 }
 
 async function checkPythonEnvironment(backendDir) {
-  if (!isPythonInstalled()) {
+  const python = findPython()
+
+  if (!python) {
     const result = await dialog.showMessageBox({
       type: 'warning',
       title: 'Python Gerekli',
       message: 'Bu uygulama çalışmak için Python 3.10+ gerektirir.',
       detail: 'Python yüklü değil veya bulunamadı. Python indirme sayfasına yönlendirileceksiniz.\n\nKurulum sırasında "Add Python to PATH" seçeneğini işaretlemeyi unutmayın!',
-      buttons: ['Python İndir', 'Çıkış'],
+      buttons: ['Python İndir', 'Yine de Devam Et', 'Çıkış'],
       defaultId: 0,
-      cancelId: 1,
+      cancelId: 2,
     })
 
     if (result.response === 0) {
       shell.openExternal('https://www.python.org/downloads/')
+      return false
     }
-    return false
+    if (result.response === 2) return false
+    return true
   }
 
-  if (!areDependenciesInstalled(backendDir)) {
+  if (!areDependenciesInstalled(python, backendDir)) {
     const result = await dialog.showMessageBox({
       type: 'info',
-      title: 'Bağımlılıklar Yükleniyor',
-      message: 'İlk çalıştırma: Gerekli paketler yükleniyor...',
+      title: 'Paketler Kuruluyor',
+      message: 'İlk çalıştırma: Gerekli Python paketleri yükleniyor...',
       detail: 'FastAPI, Playwright ve diğer bağımlılıklar kurulacak. Bu işlem birkaç dakika sürebilir.',
-      buttons: ['Kur', 'Çıkış'],
+      buttons: ['Kur', 'Atla', 'Çıkış'],
       defaultId: 0,
-      cancelId: 1,
+      cancelId: 2,
     })
 
-    if (result.response === 1) return false
+    if (result.response === 2) return false
+    if (result.response === 1) return true
 
-    const success = installDependencies(backendDir)
+    const success = installDependencies(python, backendDir)
     if (!success) {
-      await dialog.showMessageBox({
+      const retry = await dialog.showMessageBox({
         type: 'error',
         title: 'Kurulum Hatası',
-        message: 'Bağımlılıklar yüklenemedi.',
-        detail: 'Lütfen terminalde şu komutları çalıştırın:\n\npip install fastapi uvicorn playwright\npython -m playwright install chromium',
-        buttons: ['Tamam'],
+        message: 'Paketler yüklenirken bir sorun oluştu.',
+        detail: 'Terminalde şu komutları çalıştırabilirsiniz:\n\npip install fastapi uvicorn playwright pydantic\npython -m playwright install chromium\n\nYine de devam etmek ister misiniz?',
+        buttons: ['Devam Et', 'Çıkış'],
+        defaultId: 0,
+        cancelId: 1,
       })
-      return false
+      return retry.response === 0
     }
   }
 
