@@ -3,8 +3,11 @@ dist/
 dist-electron/
 .env
 *.log
-backend/__pycache__/
+__pycache__/
+*.pyc
 backend/.venv/
 backend/venv/
 .DS_Store
 Thumbs.db
+Medal_*.png
+electron_*.png

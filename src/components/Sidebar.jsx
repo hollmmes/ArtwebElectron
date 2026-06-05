@@ -57,7 +57,14 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
 
       {/* Settings */}
       <div className="p-2 border-t border-white/5">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors">
+        <button
+          onClick={() => onModuleChange('settings')}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+            activeModule === 'settings'
+              ? 'bg-primary-600/20 text-primary-400 border border-primary-500/30'
+              : 'text-white/40 hover:bg-white/5 hover:text-white/60 border border-transparent'
+          }`}
+        >
           <Settings size={20} />
           {isOpen && <span className="text-sm">Ayarlar</span>}
         </button>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import TitleBar from './components/TitleBar'
 import MapsRipper from './components/maps/MapsRipper'
+import Settings from './components/Settings'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -11,6 +12,8 @@ export default function App() {
     switch (activeModule) {
       case 'maps':
         return <MapsRipper />
+      case 'settings':
+        return <Settings />
       default:
         return <MapsRipper />
     }

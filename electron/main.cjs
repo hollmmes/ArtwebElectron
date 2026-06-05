@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
+const { autoUpdater } = require('electron-updater')
 
 let mainWindow
 let pythonProcess
@@ -31,6 +32,30 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+}
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update-available', info)
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('update-not-available')
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('download-progress', progress)
+  })
+
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update-downloaded')
+  })
+
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('update-error', err?.message || 'Güncelleme hatası')
   })
 }
 
@@ -65,6 +90,7 @@ function stopPythonBackend() {
 app.whenReady().then(() => {
   startPythonBackend()
   createWindow()
+  setupAutoUpdater()
 })
 
 app.on('window-all-closed', () => {
@@ -90,4 +116,12 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   mainWindow?.close()
+})
+
+ipcMain.on('check-for-updates', () => {
+  autoUpdater.checkForUpdates()
+})
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall()
 })
