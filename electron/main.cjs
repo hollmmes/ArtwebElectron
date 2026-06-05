@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
+const { checkPythonEnvironment, findPython } = require('./python-check.cjs')
 
 let mainWindow
 let pythonProcess
@@ -60,7 +61,7 @@ function setupAutoUpdater() {
 }
 
 function startPythonBackend() {
-  const pythonPath = process.platform === 'win32' ? 'python' : 'python3'
+  const pythonPath = findPython() || 'python'
   const backendPath = path.join(__dirname, '..', 'backend', 'main.py')
 
   pythonProcess = spawn(pythonPath, ['-u', backendPath], {
@@ -87,7 +88,15 @@ function stopPythonBackend() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  const backendDir = path.join(__dirname, '..', 'backend')
+  const pythonReady = await checkPythonEnvironment(backendDir)
+
+  if (!pythonReady) {
+    app.quit()
+    return
+  }
+
   startPythonBackend()
   createWindow()
   setupAutoUpdater()
