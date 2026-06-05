@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { RefreshCw, CheckCircle, Download, AlertCircle } from 'lucide-react'
 
-const APP_VERSION = '0.2.0'
+const APP_VERSION = '0.2.1'
 
 export default function Settings() {
   const [updateStatus, setUpdateStatus] = useState('idle')
