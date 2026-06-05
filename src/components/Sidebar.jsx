@@ -16,7 +16,7 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
         {isOpen ? (
           <div className="flex items-center gap-3">
             <img src="./icon.png" alt="Art Web" className="w-8 h-8 rounded-full" />
-            <span className="text-sm font-semibold text-white/90">Art Web</span>
+            <span className="text-sm font-semibold text-white/90">Art Web Tasarım</span>
           </div>
         ) : (
           <img src="./icon.png" alt="Art Web" className="w-8 h-8 rounded-full" />
