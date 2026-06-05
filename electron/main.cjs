@@ -7,6 +7,15 @@ const { checkPythonEnvironment, findPython } = require('./python-check.cjs')
 let mainWindow
 let pythonProcess
 
+const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev')
+
+function getBackendDir() {
+  if (isDev) {
+    return path.join(__dirname, '..', 'backend')
+  }
+  return path.join(process.resourcesPath, 'backend')
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -24,7 +33,7 @@ function createWindow() {
     backgroundColor: '#020617',
   })
 
-  if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
+  if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
   } else {
@@ -62,10 +71,13 @@ function setupAutoUpdater() {
 
 function startPythonBackend() {
   const pythonPath = findPython() || 'python'
-  const backendPath = path.join(__dirname, '..', 'backend', 'main.py')
+  const backendDir = getBackendDir()
+  const backendPath = path.join(backendDir, 'main.py')
 
   pythonProcess = spawn(pythonPath, ['-u', backendPath], {
-    cwd: path.join(__dirname, '..', 'backend'),
+    cwd: backendDir,
+    shell: true,
+    env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
   })
 
   pythonProcess.stdout.on('data', (data) => {
@@ -89,8 +101,7 @@ function stopPythonBackend() {
 }
 
 app.whenReady().then(async () => {
-  const backendDir = path.join(__dirname, '..', 'backend')
-  const pythonReady = await checkPythonEnvironment(backendDir)
+  const pythonReady = await checkPythonEnvironment()
 
   if (!pythonReady) {
     app.quit()

@@ -1,6 +1,6 @@
 {
   "name": "artweb-electron",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Art Web Tasarim - Sirket Ici Yonetim Uygulamasi",
   "main": "electron/main.cjs",
   "scripts": {
@@ -39,8 +39,14 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "backend/**/*"
+      "electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*", "!__pycache__/**", "!*.pyc", "!.venv/**", "!venv/**"]
+      }
     ],
     "win": {
       "target": "nsis",
