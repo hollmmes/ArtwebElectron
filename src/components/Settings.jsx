@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { RefreshCw, CheckCircle, Download, AlertCircle } from 'lucide-react'
 
-const APP_VERSION = '0.1.7'
+const APP_VERSION = '0.1.8'
 
 export default function Settings() {
   const [updateStatus, setUpdateStatus] = useState('idle')
@@ -110,10 +110,13 @@ export default function Settings() {
                 Yeni versiyon mevcut: <span className="text-primary-400 font-medium">v{updateInfo?.version}</span>
               </span>
               <button
-                onClick={checkForUpdates}
+                onClick={() => {
+                  setUpdateStatus('downloading')
+                  window.electronAPI?.downloadUpdate()
+                }}
                 className="ml-4 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 rounded-lg text-xs font-medium transition-colors"
               >
-                İndir
+                İndir ve Kur
               </button>
             </div>
           )}

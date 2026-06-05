@@ -142,6 +142,10 @@ ipcMain.on('check-for-updates', () => {
   autoUpdater.checkForUpdates()
 })
 
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+
 ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall()
 })
