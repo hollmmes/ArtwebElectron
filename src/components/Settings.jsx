@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, CheckCircle, Download, AlertCircle } from 'lucide-react'
+import { RefreshCw, CheckCircle, Download, AlertCircle, Moon, Sun, Monitor } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext'
 
-const APP_VERSION = '0.2.1'
+const APP_VERSION = '0.2.2'
 
 export default function Settings() {
+  const { theme, setTheme } = useTheme()
+  const isDark = theme === 'dark'
+
   const [updateStatus, setUpdateStatus] = useState('idle')
   const [updateInfo, setUpdateInfo] = useState(null)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     const api = window.electronAPI
@@ -32,104 +37,126 @@ export default function Settings() {
 
     api.onUpdateError?.((err) => {
       setUpdateStatus('error')
-      setUpdateInfo(err)
+      setErrorMessage(typeof err === 'string' ? err : err?.message || 'Bilinmeyen hata')
     })
   }, [])
 
   const checkForUpdates = () => {
     setUpdateStatus('checking')
+    setErrorMessage('')
     window.electronAPI?.checkForUpdates()
+  }
+
+  const downloadUpdate = () => {
+    setUpdateStatus('downloading')
+    setDownloadProgress(0)
+    window.electronAPI?.downloadUpdate()
   }
 
   const installUpdate = () => {
     window.electronAPI?.installUpdate()
   }
 
+  const resetStatus = () => {
+    setUpdateStatus('idle')
+    setErrorMessage('')
+  }
+
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="h-full flex flex-col gap-5 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Ayarlar</h1>
-        <p className="text-white/50 text-sm mt-1">Uygulama ayarları ve güncelleme kontrolü</p>
+        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Ayarlar</h1>
+        <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          Uygulama ayarlari ve guncelleme kontrolu
+        </p>
       </div>
 
-      {/* Versiyon Bilgisi */}
-      <div className="glass rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Uygulama Bilgileri</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-white/5">
-            <p className="text-white/40 text-xs mb-1">Uygulama</p>
-            <p className="text-white font-medium">Art Web Toolkit</p>
-          </div>
-          <div className="p-4 rounded-lg bg-white/5">
-            <p className="text-white/40 text-xs mb-1">Versiyon</p>
-            <p className="text-white font-medium">v{APP_VERSION}</p>
-          </div>
+      {/* Tema */}
+      <section className={`rounded-xl p-5 ${isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-gray-200 shadow-sm'}`}>
+        <h2 className={`text-base font-semibold mb-4 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>Gorunum</h2>
+        <div className="flex gap-2">
+          <ThemeButton
+            active={theme === 'dark'}
+            onClick={() => setTheme('dark')}
+            icon={<Moon size={16} />}
+            label="Karanlik"
+            isDark={isDark}
+          />
+          <ThemeButton
+            active={theme === 'light'}
+            onClick={() => setTheme('light')}
+            icon={<Sun size={16} />}
+            label="Aydinlik"
+            isDark={isDark}
+          />
         </div>
-      </div>
+      </section>
 
-      {/* Güncelleme */}
-      <div className="glass rounded-xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-white">Güncelleme</h2>
+      {/* Guncelleme */}
+      <section className={`rounded-xl p-5 ${isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-gray-200 shadow-sm'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>Guncelleme</h2>
+          <span className={`text-xs px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
+            v{APP_VERSION}
+          </span>
+        </div>
 
-        <div className="flex items-center gap-4">
+        <div className="space-y-3">
           {updateStatus === 'idle' && (
             <button
               onClick={checkForUpdates}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 rounded-xl text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
-              <RefreshCw size={16} />
-              Güncelleme Kontrol Et
+              <RefreshCw size={15} />
+              Guncelleme Kontrol Et
             </button>
           )}
 
           {updateStatus === 'checking' && (
-            <div className="flex items-center gap-3 text-white/60">
-              <RefreshCw size={16} className="animate-spin" />
+            <div className={`flex items-center gap-2.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              <RefreshCw size={15} className="animate-spin" />
               <span className="text-sm">Kontrol ediliyor...</span>
             </div>
           )}
 
           {updateStatus === 'up-to-date' && (
-            <div className="flex items-center gap-3 text-green-400">
-              <CheckCircle size={16} />
-              <span className="text-sm">En güncel sürümü kullanıyorsunuz</span>
-              <button
-                onClick={() => setUpdateStatus('idle')}
-                className="ml-4 text-xs text-white/40 hover:text-white/60 underline"
-              >
+            <div className="flex items-center gap-2.5">
+              <CheckCircle size={15} className="text-emerald-500" />
+              <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                En guncel surumu kullaniyorsunuz
+              </span>
+              <button onClick={resetStatus} className="ml-3 text-xs text-blue-500 hover:text-blue-400 transition-colors">
                 Tekrar kontrol et
               </button>
             </div>
           )}
 
           {updateStatus === 'available' && (
-            <div className="flex items-center gap-3">
-              <Download size={16} className="text-primary-400" />
-              <span className="text-sm text-white/80">
-                Yeni versiyon mevcut: <span className="text-primary-400 font-medium">v{updateInfo?.version}</span>
-              </span>
+            <div className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
+              <div className="flex items-center gap-2.5">
+                <Download size={15} className="text-blue-500" />
+                <span className={`text-sm ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                  Yeni surum: <span className="font-semibold text-blue-500">v{updateInfo?.version}</span>
+                </span>
+              </div>
               <button
-                onClick={() => {
-                  setUpdateStatus('downloading')
-                  window.electronAPI?.downloadUpdate()
-                }}
-                className="ml-4 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 rounded-lg text-xs font-medium transition-colors"
+                onClick={downloadUpdate}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
               >
-                İndir ve Kur
+                Indir ve Kur
               </button>
             </div>
           )}
 
           {updateStatus === 'downloading' && (
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-white/60">İndiriliyor...</span>
-                <span className="text-primary-400 font-medium">{downloadProgress}%</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Indiriliyor...</span>
+                <span className="text-sm font-medium text-blue-500">{downloadProgress}%</span>
               </div>
-              <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+              <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}>
                 <div
-                  className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full transition-all duration-300"
+                  className="h-full bg-blue-500 rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${downloadProgress}%` }}
                 />
               </div>
@@ -137,43 +164,71 @@ export default function Settings() {
           )}
 
           {updateStatus === 'downloaded' && (
-            <div className="flex items-center gap-3">
-              <CheckCircle size={16} className="text-green-400" />
-              <span className="text-sm text-white/80">Güncelleme indirildi</span>
+            <div className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-emerald-50 border border-emerald-100'}`}>
+              <div className="flex items-center gap-2.5">
+                <CheckCircle size={15} className="text-emerald-500" />
+                <span className={`text-sm ${isDark ? 'text-slate-200' : 'text-gray-700'}`}>
+                  Guncelleme indirildi, yüklenmeye hazir
+                </span>
+              </div>
               <button
                 onClick={installUpdate}
-                className="ml-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors"
               >
-                Yeniden Başlat ve Güncelle
+                Yeniden Baslat
               </button>
             </div>
           )}
 
           {updateStatus === 'error' && (
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertCircle size={16} />
-              <span className="text-sm">Güncelleme kontrol edilemedi</span>
-              <button
-                onClick={() => setUpdateStatus('idle')}
-                className="ml-4 text-xs text-white/40 hover:text-white/60 underline"
-              >
+            <div className={`p-3 rounded-lg ${isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-100'}`}>
+              <div className="flex items-center gap-2.5">
+                <AlertCircle size={15} className="text-red-500" />
+                <span className={`text-sm ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                  Guncelleme hatasi
+                </span>
+              </div>
+              {errorMessage && (
+                <p className={`text-xs mt-1.5 ml-6 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
+                  {errorMessage}
+                </p>
+              )}
+              <button onClick={resetStatus} className="mt-2 ml-6 text-xs text-blue-500 hover:text-blue-400 transition-colors">
                 Tekrar dene
               </button>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Hakkında */}
-      <div className="glass rounded-xl p-6 space-y-3">
-        <h2 className="text-lg font-semibold text-white">Hakkında</h2>
-        <p className="text-white/50 text-sm">
-          Art Web Toolkit, Art Web Tasarım şirketinin iç kullanım amaçlı geliştirdiği çok işlevli masaüstü uygulamasıdır.
+      {/* Hakkinda */}
+      <section className={`rounded-xl p-5 ${isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-gray-200 shadow-sm'}`}>
+        <h2 className={`text-base font-semibold mb-2 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>Hakkinda</h2>
+        <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+          Art Web Toolkit, Art Web Tasarim sirketinin ic kullanim amacli gelistirdigi cok islevli masaustu uygulamasidir.
         </p>
-        <p className="text-white/30 text-xs">
-          © 2024 Art Web Tasarım. Tüm hakları saklıdır.
+        <p className={`text-xs mt-2 ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
+          &copy; 2024 Art Web Tasarim. Tum haklari saklidir.
         </p>
-      </div>
+      </section>
     </div>
+  )
+}
+
+function ThemeButton({ active, onClick, icon, label, isDark }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+        active
+          ? 'bg-blue-600 text-white'
+          : isDark
+            ? 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700/60'
+            : 'bg-gray-100 text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }

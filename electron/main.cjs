@@ -47,27 +47,40 @@ function createWindow() {
 
 function setupAutoUpdater() {
   autoUpdater.autoDownload = false
-  autoUpdater.forceDevUpdateConfig = true
-  autoUpdater.disableWebInstaller = false
+  autoUpdater.autoInstallOnAppQuit = true
+
+  if (isDev) {
+    autoUpdater.forceDevUpdateConfig = true
+  }
+
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[Updater] Checking for updates...')
+  })
 
   autoUpdater.on('update-available', (info) => {
+    console.log('[Updater] Update available:', info.version)
     mainWindow?.webContents.send('update-available', info)
   })
 
-  autoUpdater.on('update-not-available', () => {
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[Updater] No update available, current is latest')
     mainWindow?.webContents.send('update-not-available')
   })
 
   autoUpdater.on('download-progress', (progress) => {
+    console.log(`[Updater] Download progress: ${Math.round(progress.percent)}%`)
     mainWindow?.webContents.send('download-progress', progress)
   })
 
-  autoUpdater.on('update-downloaded', () => {
-    mainWindow?.webContents.send('update-downloaded')
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[Updater] Update downloaded, ready to install')
+    mainWindow?.webContents.send('update-downloaded', info)
   })
 
   autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('update-error', err?.message || 'Güncelleme hatası')
+    console.error('[Updater] Error:', err)
+    const message = err?.message || 'Güncelleme hatası oluştu'
+    mainWindow?.webContents.send('update-error', message)
   })
 }
 
@@ -141,13 +154,19 @@ ipcMain.on('window-close', () => {
 })
 
 ipcMain.on('check-for-updates', () => {
-  autoUpdater.checkForUpdates()
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('[Updater] Check failed:', err)
+    mainWindow?.webContents.send('update-error', err?.message || 'Güncelleme kontrolü başarısız')
+  })
 })
 
 ipcMain.on('download-update', () => {
-  autoUpdater.downloadUpdate()
+  autoUpdater.downloadUpdate().catch((err) => {
+    console.error('[Updater] Download failed:', err)
+    mainWindow?.webContents.send('update-error', err?.message || 'İndirme başarısız')
+  })
 })
 
 ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall()
+  autoUpdater.quitAndInstall(false, true)
 })

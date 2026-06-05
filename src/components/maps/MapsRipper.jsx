@@ -3,10 +3,14 @@ import { Search, MapPin, Phone, Star, Globe, Loader2, ChevronDown, Hash, Share2 
 import BusinessDetail from './BusinessDetail'
 import { searchBusinessesStream } from '../../utils/api'
 import { cities } from '../../data/cities'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const RESULT_OPTIONS = [5, 10, 15, 20, 30, 50]
 
 export default function MapsRipper() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const [query, setQuery] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
@@ -52,7 +56,7 @@ export default function MapsRipper() {
       onResult: (event) => {
         setResults((prev) => [...prev, event.data])
         setProgress({ current: event.current, total: event.total })
-        setStatusMessage(`${event.current}/${event.total} tamamlandı`)
+        setStatusMessage(`${event.current}/${event.total} tamamlandi`)
       },
       onDone: () => {
         setLoading(false)
@@ -60,7 +64,7 @@ export default function MapsRipper() {
         setStatusMessage('')
       },
       onError: (err) => {
-        setError(err.message || 'Arama sırasında bir hata oluştu')
+        setError(err.message || 'Arama sirasinda bir hata olustu')
         setLoading(false)
         setProgress(null)
         setStatusMessage('')
@@ -70,174 +74,169 @@ export default function MapsRipper() {
 
   const progressPercent = progress ? Math.round((progress.current / progress.total) * 100) : 0
 
+  const inputCls = isDark
+    ? 'bg-slate-900/60 border border-slate-700/60 text-white placeholder-slate-500 focus:border-blue-500/50'
+    : 'bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500/50 shadow-sm'
+
+  const selectOptionCls = isDark ? 'bg-slate-900 text-white' : 'bg-white text-gray-900'
+
   return (
-    <div className="h-full flex flex-col gap-6">
-      {/* Başlık */}
+    <div className="h-full flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-bold text-white">Google Maps Ripper</h1>
-        <p className="text-white/50 text-sm mt-1">
-          Anahtar kelime ile işletmeleri arayın ve bilgilerini çekin
+        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Google Maps Ripper</h1>
+        <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          Anahtar kelime ile isletmeleri arayin ve bilgilerini cekin
         </p>
       </div>
 
-      {/* Arama Formu */}
       <form onSubmit={handleSearch} className="space-y-3">
         <div className="flex gap-3">
           <div className="flex-1 relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+            <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Anahtar kelime (örn: restoran, kuaför, eczane...)"
-              className="w-full pl-10 pr-4 py-3 glass rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500/50"
+              placeholder="Anahtar kelime (orn: restoran, kuafor, eczane...)"
+              className={`w-full pl-9 pr-4 py-2.5 rounded-lg text-sm focus:outline-none transition-colors ${inputCls}`}
             />
           </div>
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-medium transition-colors"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Ara'}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Ara'}
           </button>
         </div>
 
         <div className="flex gap-3">
-          {/* Şehir Seçimi */}
           <div className="flex-1 relative">
-            <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            <MapPin size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
             <select
               value={selectedCity}
               onChange={handleCityChange}
-              className="w-full pl-10 pr-8 py-3 glass rounded-xl text-sm text-white appearance-none focus:outline-none focus:border-primary-500/50 bg-transparent cursor-pointer"
+              className={`w-full pl-9 pr-8 py-2.5 rounded-lg text-sm appearance-none focus:outline-none cursor-pointer transition-colors ${inputCls}`}
             >
-              <option value="" className="bg-dark-800 text-white">Şehir seçin...</option>
+              <option value="" className={selectOptionCls}>Sehir secin...</option>
               {cityNames.map((city) => (
-                <option key={city} value={city} className="bg-dark-800 text-white">
-                  {city}
-                </option>
+                <option key={city} value={city} className={selectOptionCls}>{city}</option>
               ))}
             </select>
           </div>
 
-          {/* İlçe Seçimi */}
           <div className="flex-1 relative">
-            <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            <MapPin size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={!selectedCity}
-              className="w-full pl-10 pr-8 py-3 glass rounded-xl text-sm text-white appearance-none focus:outline-none focus:border-primary-500/50 bg-transparent cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`w-full pl-9 pr-8 py-2.5 rounded-lg text-sm appearance-none focus:outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${inputCls}`}
             >
-              <option value="" className="bg-dark-800 text-white">
-                {selectedCity ? 'İlçe seçin...' : 'Önce şehir seçin'}
+              <option value="" className={selectOptionCls}>
+                {selectedCity ? 'Ilce secin...' : 'Once sehir secin'}
               </option>
               {districts.map((district) => (
-                <option key={district} value={district} className="bg-dark-800 text-white">
-                  {district}
-                </option>
+                <option key={district} value={district} className={selectOptionCls}>{district}</option>
               ))}
             </select>
           </div>
 
-          {/* Sonuç Sayısı */}
           <div className="w-32 relative">
-            <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            <Hash size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
             <select
               value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
-              className="w-full pl-9 pr-8 py-3 glass rounded-xl text-sm text-white appearance-none focus:outline-none focus:border-primary-500/50 bg-transparent cursor-pointer"
+              className={`w-full pl-8 pr-8 py-2.5 rounded-lg text-sm appearance-none focus:outline-none cursor-pointer transition-colors ${inputCls}`}
             >
               {RESULT_OPTIONS.map((n) => (
-                <option key={n} value={n} className="bg-dark-800 text-white">
-                  {n} sonuç
-                </option>
+                <option key={n} value={n} className={selectOptionCls}>{n} sonuc</option>
               ))}
             </select>
           </div>
         </div>
       </form>
 
-      {/* Progress Bar */}
       {loading && progress && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-white/60">{statusMessage}</span>
-            <span className="text-primary-400 font-medium">{progressPercent}%</span>
+            <span className={isDark ? 'text-slate-400' : 'text-gray-500'}>{statusMessage}</span>
+            <span className="text-blue-500 font-medium">{progressPercent}%</span>
           </div>
-          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+          <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}>
             <div
-              className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full transition-all duration-300"
+              className="h-full bg-blue-500 rounded-full transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Loading durumu - progress öncesi */}
       {loading && !progress && (
-        <div className="flex items-center gap-3 px-4 py-3 glass rounded-xl">
-          <Loader2 size={18} className="animate-spin text-primary-500" />
-          <span className="text-white/60 text-sm">{statusMessage || 'Bağlanılıyor...'}</span>
+        <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg ${isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-gray-200 shadow-sm'}`}>
+          <Loader2 size={15} className="animate-spin text-blue-500" />
+          <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{statusMessage || 'Baglaniliyor...'}</span>
         </div>
       )}
 
-      {/* Hata */}
       {error && (
-        <div className="px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+        <div className={`px-4 py-2.5 rounded-lg text-sm ${isDark ? 'bg-red-500/10 border border-red-500/20 text-red-400' : 'bg-red-50 border border-red-100 text-red-600'}`}>
           {error}
         </div>
       )}
 
-      {/* Sonuçlar */}
       <div className="flex-1 overflow-auto">
         {results.length > 0 && (
-          <div className="grid gap-3">
-            <p className="text-white/40 text-xs">
-              {results.length} sonuç {loading && progress ? `/ ${progress.total}` : 'bulundu'}
+          <div className="grid gap-2.5">
+            <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+              {results.length} sonuc {loading && progress ? `/ ${progress.total}` : 'bulundu'}
             </p>
             {results.map((business, index) => (
               <div
                 key={index}
                 onClick={() => setSelectedBusiness(business)}
-                className="glass glass-hover rounded-xl p-4 cursor-pointer"
+                className={`rounded-lg p-4 cursor-pointer transition-all duration-150 ${
+                  isDark
+                    ? 'bg-slate-900/60 border border-slate-800/60 hover:border-slate-700/80 hover:bg-slate-800/40'
+                    : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm shadow-sm'
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-white">{business.name}</h3>
-                    <p className="text-white/50 text-sm mt-1">{business.address}</p>
-                    <div className="flex items-center gap-4 mt-2">
+                    <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{business.name}</h3>
+                    <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{business.address}</p>
+                    <div className="flex items-center gap-3 mt-2">
                       {business.rating && (
-                        <span className="flex items-center gap-1 text-yellow-400 text-sm">
-                          <Star size={14} fill="currentColor" />
+                        <span className="flex items-center gap-1 text-amber-500 text-xs">
+                          <Star size={12} fill="currentColor" />
                           {business.rating}
                         </span>
                       )}
                       {business.phone && (
-                        <span className="flex items-center gap-1 text-white/40 text-sm">
-                          <Phone size={14} />
+                        <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                          <Phone size={12} />
                           {business.phone}
                         </span>
                       )}
                       {business.website && (
-                        <span className="flex items-center gap-1 text-primary-400 text-sm">
-                          <Globe size={14} />
+                        <span className="flex items-center gap-1 text-blue-500 text-xs">
+                          <Globe size={12} />
                           Website
                         </span>
                       )}
                       {business.social_media && Object.keys(business.social_media).length > 0 && (
-                        <span className="flex items-center gap-1 text-pink-400 text-sm">
-                          <Share2 size={14} />
+                        <span className="flex items-center gap-1 text-pink-500 text-xs">
+                          <Share2 size={12} />
                           {Object.keys(business.social_media).length} sosyal
                         </span>
                       )}
                     </div>
                   </div>
                   {business.category && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-primary-500/20 text-primary-300 border border-primary-500/30">
+                    <span className={`text-xs px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
                       {business.category}
                     </span>
                   )}
@@ -250,16 +249,15 @@ export default function MapsRipper() {
         {!loading && results.length === 0 && !error && (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <MapPin size={48} className="text-white/10 mx-auto" />
-              <p className="text-white/30 text-sm mt-3">
-                Aramak istediğiniz işletme türünü yazın
+              <MapPin size={40} className={isDark ? 'text-slate-800 mx-auto' : 'text-gray-200 mx-auto'} />
+              <p className={`text-sm mt-3 ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
+                Aramak istediginiz isletme turunu yazin
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Detay Paneli */}
       {selectedBusiness && (
         <BusinessDetail
           business={selectedBusiness}
