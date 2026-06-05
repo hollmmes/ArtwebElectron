@@ -13,13 +13,13 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
     >
       {/* Logo & Toggle */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
-        {isOpen && (
+        {isOpen ? (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-              <span className="text-xs font-bold">AW</span>
-            </div>
+            <img src="./icon.png" alt="Art Web" className="w-8 h-8 rounded-full" />
             <span className="text-sm font-semibold text-white/90">Art Web</span>
           </div>
+        ) : (
+          <img src="./icon.png" alt="Art Web" className="w-8 h-8 rounded-full" />
         )}
         <button
           onClick={onToggle}

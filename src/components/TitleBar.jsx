@@ -3,7 +3,10 @@ import { Minus, Square, X } from 'lucide-react'
 export default function TitleBar() {
   return (
     <div className="title-bar h-8 flex items-center justify-between px-4 bg-dark-900 border-b border-white/5">
-      <span className="text-xs text-white/50 font-medium">Art Web Toolkit</span>
+      <div className="flex items-center gap-2">
+        <img src="./icon.png" alt="Art Web" className="w-4 h-4 rounded-sm" />
+        <span className="text-xs text-white/50 font-medium">Art Web Toolkit</span>
+      </div>
       <div className="flex items-center gap-1">
         <button
           onClick={() => window.electronAPI?.minimizeWindow()}
