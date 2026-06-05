@@ -47,6 +47,8 @@ function createWindow() {
 
 function setupAutoUpdater() {
   autoUpdater.autoDownload = false
+  autoUpdater.forceDevUpdateConfig = true
+  autoUpdater.disableWebInstaller = false
 
   autoUpdater.on('update-available', (info) => {
     mainWindow?.webContents.send('update-available', info)
