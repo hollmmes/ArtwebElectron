@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
-import { defaultSites } from '../data/sites'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -9,14 +8,12 @@ const CHECKS = [
   { id: 'backend', label: 'Backend servisi baslatiliyor' },
   { id: 'database', label: 'Veritabani baglantisi' },
   { id: 'update', label: 'Guncelleme kontrol ediliyor' },
-  { id: 'screenshots', label: 'Site goruntuleri indiriliyor' },
 ]
 
 export default function LoadingScreen({ onComplete }) {
   const [checks, setChecks] = useState(
     CHECKS.map(c => ({ ...c, status: 'waiting' }))
   )
-  const [screenshotProgress, setScreenshotProgress] = useState('')
 
   useEffect(() => {
     runChecks()
@@ -61,58 +58,10 @@ export default function LoadingScreen({ onComplete }) {
     await sleep(800)
     updateCheck('update', 'done')
 
-    // 5. Screenshots - eksik olanlari cek
-    updateCheck('screenshots', 'running')
-    await fetchMissingScreenshots()
-    updateCheck('screenshots', 'done')
-
     await sleep(400)
     onComplete()
   }
 
-  const fetchMissingScreenshots = async () => {
-    const cached = JSON.parse(localStorage.getItem('dashboard_screenshots') || '{}')
-    const missing = defaultSites.filter(s => !cached[s.url])
-
-    if (missing.length === 0) {
-      setScreenshotProgress('Tum goruntuler hazir')
-      return
-    }
-
-    let completed = 0
-    const batchSize = 4
-
-    for (let i = 0; i < missing.length; i += batchSize) {
-      const batch = missing.slice(i, i + batchSize)
-      setScreenshotProgress(`${completed}/${missing.length} site indiriliyor...`)
-
-      const promises = batch.map(async (site) => {
-        try {
-          const res = await fetch(`${API_BASE}/api/seo/audit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: site.url }),
-          })
-          const data = await res.json()
-          if (data.screenshot) {
-            cached[site.url] = data.screenshot
-          }
-          if (data.score !== undefined) {
-            const scores = JSON.parse(localStorage.getItem('dashboard_scores') || '{}')
-            const bonus = Math.min(15, Math.max(8, Math.round((100 - data.score) * 0.3)))
-            scores[site.url] = Math.min(100, data.score + bonus)
-            localStorage.setItem('dashboard_scores', JSON.stringify(scores))
-          }
-        } catch {}
-      })
-
-      await Promise.allSettled(promises)
-      completed += batch.length
-      localStorage.setItem('dashboard_screenshots', JSON.stringify(cached))
-    }
-
-    setScreenshotProgress(`${missing.length} site tamamlandi`)
-  }
 
   return (
     <div className="h-screen bg-slate-950 flex items-center justify-center">
@@ -120,7 +69,7 @@ export default function LoadingScreen({ onComplete }) {
         {/* Lottie animation */}
         <div className="w-36 h-36 mb-6">
           <DotLottieReact
-            src="https://lottie.host/4c8947c0-9b47-4533-92f5-cf56ff653880/G4n1rsTAnR.lottie"
+            src="./loading.lottie"
             loop
             autoplay
             style={{ width: '100%', height: '100%' }}
@@ -149,9 +98,6 @@ export default function LoadingScreen({ onComplete }) {
                 'text-slate-700'
               }`}>
                 {check.label}
-                {check.id === 'screenshots' && screenshotProgress && (
-                  <span className="text-slate-600 ml-1">({screenshotProgress})</span>
-                )}
               </span>
             </div>
           ))}

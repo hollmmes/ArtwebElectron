@@ -7,55 +7,65 @@ import SiteDetail from './SiteDetail'
 const API_BASE = 'http://localhost:8000'
 const DEFAULT_URLS = new Set(defaultSites.map(s => s.url))
 
+async function fetchCustomSites() {
+  const res = await fetch(`${API_BASE}/api/seo/sites`)
+  const data = await res.json()
+  return data.sites || []
+}
+
+async function addCustomSiteAPI(url, name) {
+  await fetch(`${API_BASE}/api/seo/sites`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, name }),
+  })
+}
+
+async function deleteCustomSiteAPI(id) {
+  await fetch(`${API_BASE}/api/seo/sites/${id}`, { method: 'DELETE' })
+}
+
 export default function Dashboard() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const [sites, setSites] = useState([])
   const [customSites, setCustomSites] = useState([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [newName, setNewName] = useState('')
   const [selectedSite, setSelectedSite] = useState(null)
-  const [screenshots, setScreenshots] = useState({})
   const [scores, setScores] = useState({})
-  const [loadingScreenshots, setLoadingScreenshots] = useState(true)
 
   useEffect(() => {
-    const saved = localStorage.getItem('dashboard_custom_sites')
-    if (saved) {
-      try { setCustomSites(JSON.parse(saved)) } catch {}
-    }
-    // Load cached scores
     const cachedScores = localStorage.getItem('dashboard_scores')
     if (cachedScores) {
       try { setScores(JSON.parse(cachedScores)) } catch {}
     }
-    setLoadingScreenshots(false)
+    loadCustomSites()
   }, [])
 
-  useEffect(() => {
-    setSites([...defaultSites, ...customSites])
-  }, [customSites])
+  const loadCustomSites = async () => {
+    try {
+      const sites = await fetchCustomSites()
+      setCustomSites(sites)
+    } catch {}
+  }
 
-  const addCustomSite = () => {
+  const addCustomSite = async () => {
     if (!newUrl.trim()) return
     const url = newUrl.startsWith('http') ? newUrl : `https://${newUrl}`
     const name = newName.trim() || url.replace(/https?:\/\/(www\.)?/, '').split('/')[0]
-    const newSite = { url, name, custom: true }
-    const updated = [...customSites, newSite]
-    setCustomSites(updated)
-    localStorage.setItem('dashboard_custom_sites', JSON.stringify(updated))
+    await addCustomSiteAPI(url, name)
+    await loadCustomSites()
     setNewUrl('')
     setNewName('')
     setShowAddForm(false)
   }
 
-  const removeCustomSite = (e, index) => {
+  const removeCustomSite = async (e, siteId) => {
     e.stopPropagation()
-    const updated = customSites.filter((_, i) => i !== index)
-    setCustomSites(updated)
-    localStorage.setItem('dashboard_custom_sites', JSON.stringify(updated))
+    await deleteCustomSiteAPI(siteId)
+    await loadCustomSites()
   }
 
   const handleSiteClick = (site) => {
@@ -95,7 +105,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className={`text-xs px-3 py-1.5 rounded-lg ${isDark ? 'bg-slate-800/60 text-slate-400' : 'bg-gray-100 text-gray-500'}`}>
-          {sites.length} site
+          {defaultSites.length + customSites.length} site
         </div>
       </div>
 
@@ -109,7 +119,7 @@ export default function Dashboard() {
 
           {/* Custom sites */}
           {customSites.map((site, i) => (
-            <SiteCard key={`custom-${i}`} site={site} isDark={isDark} score={scores[site.url]} screenshot={getCachedScreenshot(site.url)} onClick={() => handleSiteClick(site)} onRemove={(e) => removeCustomSite(e, i)} />
+            <SiteCard key={`custom-${i}`} site={site} isDark={isDark} score={scores[site.url]} screenshot={getCachedScreenshot(site.url)} onClick={() => handleSiteClick(site)} onRemove={(e) => removeCustomSite(e, site.id)} />
           ))}
 
           {/* Add button */}
@@ -169,6 +179,7 @@ export default function Dashboard() {
 
 function SiteCard({ site, isDark, score, screenshot, onClick, onRemove }) {
   const domain = site.url.replace(/https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+  const imgSrc = site.screenshot || screenshot
 
   return (
     <div
@@ -181,8 +192,8 @@ function SiteCard({ site, isDark, score, screenshot, onClick, onRemove }) {
     >
       {/* Thumbnail */}
       <div className={`aspect-[4/3] flex items-center justify-center relative overflow-hidden ${isDark ? 'bg-slate-800/50' : 'bg-gray-100'}`}>
-        {screenshot ? (
-          <img src={screenshot} alt={site.name} className="w-full h-full object-cover object-top" />
+        {imgSrc ? (
+          <img src={imgSrc} alt={site.name} className="w-full h-full object-cover object-top" />
         ) : (
           <div className="flex flex-col items-center gap-1">
             <Globe size={20} className={isDark ? 'text-slate-700' : 'text-gray-300'} />

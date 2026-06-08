@@ -4,12 +4,44 @@ import asyncio
 import json
 import re
 from playwright.async_api import async_playwright
+from database import save_custom_site, get_custom_sites, delete_custom_site
 
 router = APIRouter()
 
 
 class SeoAuditRequest(BaseModel):
     url: str
+
+
+class CustomSiteRequest(BaseModel):
+    url: str
+    name: str = ""
+
+
+@router.get("/sites")
+async def list_custom_sites():
+    sites = await get_custom_sites()
+    return {"sites": sites}
+
+
+@router.post("/sites")
+async def add_custom_site(request: CustomSiteRequest):
+    url = request.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL gerekli")
+    if not url.startswith("http"):
+        url = f"https://{url}"
+    name = request.name.strip() or url.replace("https://", "").replace("http://", "").split("/")[0]
+    await save_custom_site(url, name)
+    return {"status": "ok", "url": url, "name": name}
+
+
+@router.delete("/sites/{site_id}")
+async def remove_custom_site(site_id: int):
+    deleted = await delete_custom_site(site_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Site bulunamadi")
+    return {"status": "deleted"}
 
 
 @router.post("/audit")

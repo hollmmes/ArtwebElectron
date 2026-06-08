@@ -48,6 +48,13 @@ async def init_db():
             created_at TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS custom_sites (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_businesses_name_address ON businesses(name, address);
         CREATE INDEX IF NOT EXISTS idx_businesses_query_location ON businesses(query, location);
         CREATE INDEX IF NOT EXISTS idx_searches_query_location ON searches(query, location);
@@ -237,6 +244,42 @@ async def delete_business(business_id: int) -> bool:
     db = await get_db()
     try:
         cursor = await db.execute("DELETE FROM businesses WHERE id = ?", (business_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+    finally:
+        await db.close()
+
+
+async def save_custom_site(url: str, name: str):
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT id FROM custom_sites WHERE url = ?", (url,))
+        if await cursor.fetchone():
+            return False
+        await db.execute(
+            "INSERT INTO custom_sites (url, name, created_at) VALUES (?, ?, ?)",
+            (url, name, datetime.now().isoformat())
+        )
+        await db.commit()
+        return True
+    finally:
+        await db.close()
+
+
+async def get_custom_sites() -> list[dict]:
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM custom_sites ORDER BY created_at DESC")
+        rows = await cursor.fetchall()
+        return [{"id": row["id"], "url": row["url"], "name": row["name"], "created_at": row["created_at"]} for row in rows]
+    finally:
+        await db.close()
+
+
+async def delete_custom_site(site_id: int) -> bool:
+    db = await get_db()
+    try:
+        cursor = await db.execute("DELETE FROM custom_sites WHERE id = ?", (site_id,))
         await db.commit()
         return cursor.rowcount > 0
     finally:
