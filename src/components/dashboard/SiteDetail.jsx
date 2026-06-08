@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Loader2, CheckCircle, AlertTriangle, XCircle, Info, Globe, FileText, Bot, Map, Zap, ExternalLink, X } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://localhost:42310'
 
 export default function SiteDetail({ site, onBack, onScoreUpdate, onScreenshotUpdate }) {
   const { theme } = useTheme()

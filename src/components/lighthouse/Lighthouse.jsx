@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Globe, Loader2, AlertTriangle, Zap, Smartphone, Monitor, Plus, X, Trash2, Info, Check, Circle } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://localhost:42310'
 
 export default function Lighthouse() {
   const { theme } = useTheme()

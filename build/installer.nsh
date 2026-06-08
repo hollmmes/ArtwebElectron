@@ -49,4 +49,13 @@
     nsExec::ExecToStack 'python -m playwright install chromium'
     Pop $0
   ${EndIf}
+
+  ; Add firewall rules for Node.js (Lighthouse uses it)
+  DetailPrint "Guvenlik duvari kurallari ekleniyor..."
+  nsExec::ExecToStack 'netsh advfirewall firewall add rule name="Art Web Toolkit - Node.js" dir=in action=allow program="$INSTDIR\resources\app.asar.unpacked\node_modules\electron\dist\electron.exe" enable=yes profile=any'
+  Pop $0
+  nsExec::ExecToStack 'netsh advfirewall firewall add rule name="Art Web Toolkit - Python" dir=in action=allow program="$LOCALAPPDATA\Programs\Python\Python313\python.exe" enable=yes profile=any'
+  Pop $0
+  nsExec::ExecToStack 'netsh advfirewall firewall add rule name="Art Web Toolkit - Node" dir=in action=allow protocol=TCP localport=42310 enable=yes profile=any'
+  Pop $0
 !macroend

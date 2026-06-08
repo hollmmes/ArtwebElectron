@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://localhost:42310'
 
 const CHECKS = [
   { id: 'python', label: 'Python ortami kontrol ediliyor' },
