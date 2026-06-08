@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { RefreshCw, CheckCircle, Download, AlertCircle, Moon, Sun, Monitor } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 
-const APP_VERSION = '0.3.0'
+const APP_VERSION = '0.3.1'
 
 export default function Settings() {
   const { theme, setTheme } = useTheme()
