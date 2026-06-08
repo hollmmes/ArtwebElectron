@@ -46,8 +46,30 @@ robots.txt, sitemap.xml, llms.txt kontrolu. Meta tag, heading, Open Graph, gorse
 
 ---
 
+## Proje Hakkinda (AI Context)
+
+Bu proje Art Web Tasarim sirketi icin gelistirilen dahili bir masaustu uygulamasidir. Electron (Node.js) ile paketlenmis, React + Tailwind CSS frontend ve Python FastAPI backend kullanan cok modullu bir mimari uzerine kuruludur.
+
+**Mimari:** Electron ana pencereyi olusturur, icinde React SPA calisir. Backend ayri bir Python process olarak baslatilir (port 42310) ve Playwright ile headless Chrome uzerinden web scraping/analiz yapar. Frontend ile backend arasinda REST API + Server-Sent Events (streaming) iletisimi vardir.
+
+**Moduller:**
+- `src/components/dashboard/` — Site yonetim paneli, SEO analiz sonuclari, screenshot onbellekleme
+- `src/components/maps/` — Google Maps isletme veri kazima, SQLite'a kayit, CSV/JSON export
+- `src/components/lighthouse/` — Google Lighthouse performans raporu (npx lighthouse CLI)
+- `backend/routers/seo.py` — SEO bot (meta tag, heading, robots.txt, sitemap, llms.txt analizi + puanlama)
+- `backend/routers/maps.py` — Maps scraper API, veritabani islemleri, export
+- `backend/routers/lighthouse.py` — Lighthouse CLI wrapper, HTML rapor uretimi
+- `backend/services/maps_scraper.py` — Playwright ile Google Maps scraping, paralel detay cekme
+- `backend/database.py` — SQLite sema, CRUD islemleri, migration
+
+**Veri akisi:** Kullanici arama yapar -> backend Playwright ile headless Chrome acar -> Google Maps'te arar -> sonuclari stream eder (SSE) -> frontend anlik gosterir -> backend SQLite'a kaydeder.
+
+**Build/Release:** electron-builder ile NSIS installer uretilir. GitHub Releases uzerinden auto-update (electron-updater). Artifact adi: `ArtWebToolkit-Setup-X.Y.Z.exe`.
+
+---
+
 ## Lisans
 
-Bu yazilim ozel mulkiyete tabidir. Kaynak kodu paylisilamaz, kopyalanamaz veya degistirilemez. Tum haklar saklidir.
+Bu yazilim ozel mulkiyete tabidir. Kaynak kodu paylasilamaz, kopyalanamaz veya degistirilemez. Tum haklar saklidir.
 
 **Art Web Tasarim** tarafindan gelistirilmektedir.
