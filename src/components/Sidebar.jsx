@@ -1,6 +1,8 @@
 import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
+
+const APP_VERSION = '0.3.3'
 
 const modules = [
   {
@@ -27,6 +29,13 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [expanded, setExpanded] = useState({ maps: true })
+  const [updateAvailable, setUpdateAvailable] = useState(null)
+
+  useEffect(() => {
+    window.electronAPI?.onUpdateAvailable((info) => {
+      setUpdateAvailable(info.version)
+    })
+  }, [])
 
   const toggleExpand = (id) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -149,7 +158,34 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
         })}
       </nav>
 
-      <div className={`p-2 border-t ${isDark ? 'border-slate-800/60' : 'border-gray-100'}`}>
+      <div className={`p-2 border-t space-y-1 ${isDark ? 'border-slate-800/60' : 'border-gray-100'}`}>
+        {/* Versiyon numarasi */}
+        {isOpen && (
+          <p className={`text-center text-[10px] pb-1 ${isDark ? 'text-slate-700' : 'text-gray-300'}`}>
+            v{APP_VERSION}
+          </p>
+        )}
+
+        {/* Guncelleme bildirimi */}
+        {updateAvailable && isOpen && (
+          <div
+            onClick={() => onModuleChange('settings')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+              isDark ? 'bg-emerald-500/10 hover:bg-emerald-500/15' : 'bg-emerald-50 hover:bg-emerald-100'
+            }`}
+          >
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className={`text-[11px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              v{updateAvailable} mevcut
+            </span>
+          </div>
+        )}
+        {updateAvailable && !isOpen && (
+          <div className="flex justify-center">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" title={`v${updateAvailable} mevcut`} />
+          </div>
+        )}
+
         <button
           onClick={() => onModuleChange('settings')}
           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${

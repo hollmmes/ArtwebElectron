@@ -54,8 +54,17 @@ export default function LoadingScreen({ onComplete }) {
 
     // 4. Update
     updateCheck('update', 'running')
-    try { window.electronAPI?.checkForUpdates() } catch {}
-    await sleep(800)
+    try {
+      window.electronAPI?.checkForUpdates()
+      window.electronAPI?.onUpdateAvailable(() => {
+        updateCheck('update', 'done')
+        setChecks(prev => prev.map(c => c.id === 'update' ? { ...c, label: 'Yeni surum mevcut!' } : c))
+      })
+      window.electronAPI?.onUpdateNotAvailable(() => {
+        updateCheck('update', 'done')
+      })
+    } catch {}
+    await sleep(1500)
     updateCheck('update', 'done')
 
     await sleep(400)
