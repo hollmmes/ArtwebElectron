@@ -14,4 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDownloadProgress: (callback) => ipcRenderer.on('download-progress', (_e, progress) => callback(progress)),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (_e, info) => callback(info)),
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_e, err) => callback(err)),
+
+  onStartupCheck: (callback) => ipcRenderer.on('startup-check', (_e, data) => callback(data)),
 })

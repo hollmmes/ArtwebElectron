@@ -1,13 +1,36 @@
-import { MapPin, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react'
+import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid } from 'lucide-react'
+import { useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
 const modules = [
-  { id: 'maps', name: 'Maps Ripper', icon: MapPin },
+  {
+    id: 'dashboard',
+    name: 'Dashboard',
+    icon: LayoutGrid,
+  },
+  {
+    id: 'maps',
+    name: 'Maps Ripper',
+    icon: MapPin,
+    children: [
+      { id: 'maps-history', name: 'Gecmis Sonuclar', icon: History },
+    ],
+  },
+  {
+    id: 'lighthouse',
+    name: 'Lighthouse',
+    icon: Zap,
+  },
 ]
 
 export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange }) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const [expanded, setExpanded] = useState({ maps: true })
+
+  const toggleExpand = (id) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
 
   return (
     <aside
@@ -59,23 +82,69 @@ export default function Sidebar({ isOpen, onToggle, activeModule, onModuleChange
         {modules.map((mod) => {
           const Icon = mod.icon
           const isActive = activeModule === mod.id
+          const isExpanded = expanded[mod.id]
+          const hasChildren = mod.children && mod.children.length > 0
+
           return (
-            <button
-              key={mod.id}
-              onClick={() => onModuleChange(mod.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${
-                isActive
-                  ? isDark
-                    ? 'bg-blue-500/10 text-blue-400'
-                    : 'bg-blue-50 text-blue-600'
-                  : isDark
-                    ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Icon size={18} />
-              {isOpen && <span className="text-sm font-medium">{mod.name}</span>}
-            </button>
+            <div key={mod.id}>
+              <button
+                onClick={() => {
+                  onModuleChange(mod.id)
+                  if (hasChildren && isOpen) toggleExpand(mod.id)
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${
+                  isActive
+                    ? isDark
+                      ? 'bg-blue-500/10 text-blue-400'
+                      : 'bg-blue-50 text-blue-600'
+                    : isDark
+                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Icon size={18} />
+                {isOpen && (
+                  <>
+                    <span className="text-sm font-medium flex-1 text-left">{mod.name}</span>
+                    {hasChildren && (
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${
+                          isDark ? 'text-slate-600' : 'text-gray-400'
+                        }`}
+                      />
+                    )}
+                  </>
+                )}
+              </button>
+
+              {hasChildren && isOpen && isExpanded && (
+                <div className="ml-4 mt-0.5 space-y-0.5">
+                  {mod.children.map((child) => {
+                    const ChildIcon = child.icon
+                    const isChildActive = activeModule === child.id
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => onModuleChange(child.id)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-all duration-150 ${
+                          isChildActive
+                            ? isDark
+                              ? 'bg-blue-500/10 text-blue-400'
+                              : 'bg-blue-50 text-blue-600'
+                            : isDark
+                              ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <ChildIcon size={15} />
+                        <span className="text-xs font-medium">{child.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )
         })}
       </nav>

@@ -7,6 +7,8 @@ __pycache__/
 *.pyc
 backend/.venv/
 backend/venv/
+backend/artweb.db
+backend/lighthouse_reports/
 .DS_Store
 Thumbs.db
 Medal_*.png

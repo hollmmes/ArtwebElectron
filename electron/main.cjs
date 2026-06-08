@@ -4,6 +4,11 @@ const { spawn } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 const { checkPythonEnvironment, findPython } = require('./python-check.cjs')
 
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED') return
+  console.error('[Uncaught]', err)
+})
+
 let mainWindow
 let pythonProcess
 
@@ -105,7 +110,16 @@ function startPythonBackend() {
 
   pythonProcess.on('close', (code) => {
     console.log(`[Backend] Process exited with code ${code}`)
+    pythonProcess = null
   })
+
+  pythonProcess.on('error', (err) => {
+    console.error(`[Backend] Process error: ${err.message}`)
+    pythonProcess = null
+  })
+
+  pythonProcess.stdout.on('error', () => {})
+  pythonProcess.stderr.on('error', () => {})
 }
 
 function stopPythonBackend() {

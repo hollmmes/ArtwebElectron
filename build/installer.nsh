@@ -23,7 +23,7 @@
 
         ; Install pip dependencies
         DetailPrint "Python paketleri kuruluyor..."
-        nsExec::ExecToStack 'cmd /c "$LOCALAPPDATA\Programs\Python\Python313\python.exe" -m pip install fastapi uvicorn playwright pydantic --quiet'
+        nsExec::ExecToStack 'cmd /c "$LOCALAPPDATA\Programs\Python\Python313\python.exe" -m pip install fastapi uvicorn playwright pydantic aiosqlite aiohttp --quiet'
         Pop $0
 
         ; Install Playwright Chromium
@@ -44,7 +44,7 @@
   ${Else}
     ; Python found, install dependencies silently
     DetailPrint "Python paketleri kontrol ediliyor..."
-    nsExec::ExecToStack 'python -m pip install fastapi uvicorn playwright pydantic --quiet'
+    nsExec::ExecToStack 'python -m pip install fastapi uvicorn playwright pydantic aiosqlite aiohttp --quiet'
     Pop $0
     nsExec::ExecToStack 'python -m playwright install chromium'
     Pop $0

@@ -1,6 +1,6 @@
 {
   "name": "artweb-electron",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Art Web Tasarim - Sirket Ici Yonetim Uygulamasi",
   "main": "electron/main.cjs",
   "scripts": {
@@ -26,6 +26,7 @@
     "wait-on": "^8.0.3"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.19.4",
     "electron-updater": "^6.3.9",
     "lucide-react": "^1.17.0",
     "react": "^19.1.0",
@@ -45,7 +46,13 @@
       {
         "from": "backend",
         "to": "backend",
-        "filter": ["**/*", "!__pycache__/**", "!*.pyc", "!.venv/**", "!venv/**"]
+        "filter": [
+          "**/*",
+          "!__pycache__/**",
+          "!*.pyc",
+          "!.venv/**",
+          "!venv/**"
+        ]
       }
     ],
     "win": {

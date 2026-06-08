@@ -2,22 +2,37 @@ import { useState } from 'react'
 import { useTheme } from './contexts/ThemeContext'
 import Sidebar from './components/Sidebar'
 import TitleBar from './components/TitleBar'
+import LoadingScreen from './components/LoadingScreen'
+import Dashboard from './components/dashboard/Dashboard'
 import MapsRipper from './components/maps/MapsRipper'
+import MapsHistory from './components/maps/MapsHistory'
+import Lighthouse from './components/lighthouse/Lighthouse'
 import Settings from './components/Settings'
 
 export default function App() {
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [activeModule, setActiveModule] = useState('maps')
+  const [activeModule, setActiveModule] = useState('dashboard')
+  const [ready, setReady] = useState(false)
+
+  if (!ready) {
+    return <LoadingScreen onComplete={() => setReady(true)} />
+  }
 
   const renderModule = () => {
     switch (activeModule) {
+      case 'dashboard':
+        return <Dashboard />
       case 'maps':
         return <MapsRipper />
+      case 'maps-history':
+        return <MapsHistory />
+      case 'lighthouse':
+        return <Lighthouse />
       case 'settings':
         return <Settings />
       default:
-        return <MapsRipper />
+        return <Dashboard />
     }
   }
 
