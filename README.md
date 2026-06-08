@@ -1,65 +1,53 @@
-# Art Web Toolkit
+<p align="center">
+  <img src="assets/icon.png" alt="Art Web Toolkit" width="120" />
+</p>
 
-Art Web Tasarım ekibi için geliştirilen masaüstü uygulaması. Birden fazla aracı tek çatı altında toplar.
+<h1 align="center">Art Web Toolkit</h1>
 
-## Ne İşe Yarıyor?
+<p align="center">
+  Art Web Tasarım ekibi için geliştirilen masaüstü uygulaması.<br/>
+  Birden fazla aracı tek çatı altında toplar.
+</p>
 
-### 1. Site Dashboard
-Yönettiğiniz web sitelerini grid halinde görün. Her siteye tıklayınca:
-- **SEO analizi** yapılır (title, description, h1, robots.txt, sitemap.xml, llms.txt kontrolü)
-- **SEO puanı** hesaplanır (100 üzerinden)
-- **Lighthouse** çalıştırılabilir (Chrome DevTools raporu)
-- Sonuçlar kaydedilir, tekrar açınca anında yüklenir
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.3.4-blue" />
+  <img src="https://img.shields.io/badge/platform-Windows-lightgrey" />
+  <img src="https://img.shields.io/badge/license-Proprietary-red" />
+</p>
 
-### 2. Google Maps Ripper
-Anahtar kelime + şehir/ilçe girerek Google Maps'ten işletme verisi çekersiniz:
-- İşletme adı, adres, telefon, website, email
-- Puan, yorum sayısı, yorumlar (10'a kadar)
-- Sosyal medya linkleri, çalışma saatleri, fotoğraflar
-- Konum (lat/lng), Google Maps linki
+---
 
-Sonuçlar SQLite veritabanına kaydedilir. Aynı aramayı tekrar yapınca yeni/eski etiketleri görürsünüz.
+## Ozellikler
 
-**Geçmiş Sonuçlar** sayfasından kayıtlı işletmeleri kategoriye göre filtreleyebilir, arayabilir ve **CSV/JSON olarak dışarı aktarabilirsiniz**.
+### Site Dashboard
+Yonettiginiz web sitelerini grid halinde gorun. Her siteye tiklayinca SEO analizi yapilir, puan hesaplanir, Lighthouse calistirilabilir.
 
-### 3. Lighthouse
-Herhangi bir URL'nin performans raporunu alın:
-- Masaüstü + Mobil ayrı ayrı
-- Birden fazla site ekleyip sırayla analiz
-- Chrome DevTools'taki ile birebir aynı HTML rapor
-- Geçmiş raporlar saklanır
+### Google Maps Ripper
+Anahtar kelime + sehir/ilce girerek Google Maps'ten isletme verisi cekin. Isletme adi, adres, telefon, website, email, puan, yorumlar, sosyal medya, calisma saatleri, fotograflar. Sonuclari CSV/JSON olarak disari aktarin.
 
-## Kurulum
+### Lighthouse
+Herhangi bir URL'nin performans raporunu alin. Masaustu + Mobil ayri ayri, Chrome DevTools ile birebir ayni HTML rapor.
 
-```bash
-# Bağımlılıkları yükle
-npm install
+### SEO Bot
+robots.txt, sitemap.xml, llms.txt kontrolu. Meta tag, heading, Open Graph, gorsel alt etiketi analizi. 100 uzerinden puanlama.
 
-# Python bağımlılıkları
-cd backend
-pip install -r requirements.txt
-playwright install chromium
-
-# Çalıştır
-cd ..
-npm run electron:dev
-```
+---
 
 ## Teknolojiler
 
 | Katman | Teknoloji |
 |--------|-----------|
-| Masaüstü | Electron |
+| Masaustu | Electron |
 | Frontend | React + Tailwind CSS |
 | Backend | Python FastAPI |
 | Scraping | Playwright (headless Chrome) |
-| Veritabanı | SQLite (aiosqlite) |
-| Güncelleme | electron-updater (GitHub releases) |
+| Veritabani | SQLite |
+| Guncelleme | electron-updater (GitHub releases) |
 
-## Build & Release
+---
 
-```bash
-npm run electron:build
-```
+## Lisans
 
-Build çıktısı `dist-electron/` klasöründe oluşur. Release süreci için `CLAUDE.md` dosyasına bakın.
+Bu yazilim ozel mulkiyete tabidir. Kaynak kodu paylisilamaz, kopyalanamaz veya degistirilemez. Tum haklar saklidir.
+
+**Art Web Tasarim** tarafindan gelistirilmektedir.
