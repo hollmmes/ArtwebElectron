@@ -269,8 +269,6 @@ export default function Tracking() {
   const [loading,  setLoading]  = useState(false)
   const [search,   setSearch]   = useState('')
   const [statusFilter, setStatusFilter] = useState('Tümü')
-  const [seeded,   setSeeded]   = useState(false)
-
   const load = async (checkSeed = false) => {
     setLoading(true)
     try {
@@ -283,8 +281,8 @@ export default function Tracking() {
       setDomains(d)
       setHostings(h)
       setSsls(s)
-      if (checkSeed && d.length === 0 && h.length === 0 && s.length === 0 && !seeded) {
-        setSeeded(true)
+      if (checkSeed && d.length === 0 && h.length === 0 && s.length === 0 && !localStorage.getItem('tracking_seeded')) {
+        localStorage.setItem('tracking_seeded', '1')
         await seedInitialData()
       }
     } finally {
