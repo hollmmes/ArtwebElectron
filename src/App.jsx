@@ -3,6 +3,7 @@ import { useTheme } from './contexts/ThemeContext'
 import Sidebar from './components/Sidebar'
 import TitleBar from './components/TitleBar'
 import LoadingScreen from './components/LoadingScreen'
+import HomeDashboard from './components/dashboard/HomeDashboard'
 import Dashboard from './components/dashboard/Dashboard'
 import MapsRipper from './components/maps/MapsRipper'
 import MapsHistory from './components/maps/MapsHistory'
@@ -23,6 +24,8 @@ export default function App() {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard':
+        return <HomeDashboard />
+      case 'site-monitor':
         return <Dashboard />
       case 'maps':
         return <MapsRipper />
@@ -35,7 +38,7 @@ export default function App() {
       case 'settings':
         return <Settings />
       default:
-        return <Dashboard />
+        return <HomeDashboard />
     }
   }
 

@@ -1,4 +1,4 @@
-import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid, Globe } from 'lucide-react'
+import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid, Globe, Shield } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -9,6 +9,11 @@ const modules = [
     id: 'dashboard',
     name: 'Dashboard',
     icon: LayoutGrid,
+  },
+  {
+    id: 'site-monitor',
+    name: 'Site İzleme',
+    icon: Globe,
   },
   {
     id: 'maps',
@@ -26,7 +31,7 @@ const modules = [
   {
     id: 'tracking',
     name: 'Domain / SSL',
-    icon: Globe,
+    icon: Shield,
   },
 ]
 

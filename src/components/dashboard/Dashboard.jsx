@@ -99,7 +99,7 @@ export default function Dashboard() {
     <div className="h-full flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Site Dashboard</h1>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Site İzleme</h1>
           <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             Sitelerinizin SEO durumunu takip edin
           </p>
