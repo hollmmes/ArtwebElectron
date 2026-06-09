@@ -2,7 +2,7 @@ import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, 
 import { useState, useEffect } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
-const APP_VERSION = '0.3.4'
+import { version as APP_VERSION } from '../../package.json'
 
 const modules = [
   {
