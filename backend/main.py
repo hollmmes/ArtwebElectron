@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from routers import maps, lighthouse, seo
+from routers import maps, lighthouse, seo, tracking
 from database import init_db
 
 
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(maps.router, prefix="/api/maps")
 app.include_router(lighthouse.router, prefix="/api/lighthouse")
 app.include_router(seo.router, prefix="/api/seo")
+app.include_router(tracking.router, prefix="/api/tracking")
 
 
 @app.get("/health")

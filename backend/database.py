@@ -55,6 +55,38 @@ async def init_db():
             created_at TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS domains (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            renewal_date TEXT NOT NULL,
+            amount TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'Aktif',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS hostings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            renewal_date TEXT NOT NULL,
+            amount TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'Aktif',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ssl_certs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            renewal_date TEXT NOT NULL,
+            amount TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'Aktif',
+            notes TEXT DEFAULT '',
+            created_at TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_businesses_name_address ON businesses(name, address);
         CREATE INDEX IF NOT EXISTS idx_businesses_query_location ON businesses(query, location);
         CREATE INDEX IF NOT EXISTS idx_searches_query_location ON searches(query, location);
@@ -280,6 +312,165 @@ async def delete_custom_site(site_id: int) -> bool:
     db = await get_db()
     try:
         cursor = await db.execute("DELETE FROM custom_sites WHERE id = ?", (site_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+    finally:
+        await db.close()
+
+
+async def upsert_domain(data: dict) -> int:
+    db = await get_db()
+    try:
+        if data.get("id"):
+            await db.execute(
+                "UPDATE domains SET domain=?, renewal_date=?, amount=?, status=?, notes=? WHERE id=?",
+                (data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), data["id"])
+            )
+            await db.commit()
+            return data["id"]
+        cursor = await db.execute(
+            "INSERT INTO domains (domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?)",
+            (data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), datetime.now().isoformat())
+        )
+        await db.commit()
+        return cursor.lastrowid
+    finally:
+        await db.close()
+
+
+async def bulk_insert_domains(rows: list[dict]):
+    db = await get_db()
+    try:
+        now = datetime.now().isoformat()
+        await db.executemany(
+            "INSERT INTO domains (domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?)",
+            [(r["domain"], r["renewal_date"], r.get("amount",""), r["status"], r.get("notes",""), now) for r in rows]
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_domains() -> list[dict]:
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM domains ORDER BY renewal_date ASC")
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        await db.close()
+
+
+async def delete_domain(domain_id: int) -> bool:
+    db = await get_db()
+    try:
+        cursor = await db.execute("DELETE FROM domains WHERE id=?", (domain_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+    finally:
+        await db.close()
+
+
+async def upsert_hosting(data: dict) -> int:
+    db = await get_db()
+    try:
+        if data.get("id"):
+            await db.execute(
+                "UPDATE hostings SET product_name=?, domain=?, renewal_date=?, amount=?, status=?, notes=? WHERE id=?",
+                (data["product_name"], data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), data["id"])
+            )
+            await db.commit()
+            return data["id"]
+        cursor = await db.execute(
+            "INSERT INTO hostings (product_name, domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?,?)",
+            (data["product_name"], data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), datetime.now().isoformat())
+        )
+        await db.commit()
+        return cursor.lastrowid
+    finally:
+        await db.close()
+
+
+async def bulk_insert_hostings(rows: list[dict]):
+    db = await get_db()
+    try:
+        now = datetime.now().isoformat()
+        await db.executemany(
+            "INSERT INTO hostings (product_name, domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?,?)",
+            [(r["product_name"], r["domain"], r["renewal_date"], r.get("amount",""), r["status"], r.get("notes",""), now) for r in rows]
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_hostings() -> list[dict]:
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM hostings ORDER BY renewal_date ASC")
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        await db.close()
+
+
+async def delete_hosting(hosting_id: int) -> bool:
+    db = await get_db()
+    try:
+        cursor = await db.execute("DELETE FROM hostings WHERE id=?", (hosting_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+    finally:
+        await db.close()
+
+
+async def upsert_ssl(data: dict) -> int:
+    db = await get_db()
+    try:
+        if data.get("id"):
+            await db.execute(
+                "UPDATE ssl_certs SET product_name=?, domain=?, renewal_date=?, amount=?, status=?, notes=? WHERE id=?",
+                (data["product_name"], data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), data["id"])
+            )
+            await db.commit()
+            return data["id"]
+        cursor = await db.execute(
+            "INSERT INTO ssl_certs (product_name, domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?,?)",
+            (data["product_name"], data["domain"], data["renewal_date"], data.get("amount",""), data["status"], data.get("notes",""), datetime.now().isoformat())
+        )
+        await db.commit()
+        return cursor.lastrowid
+    finally:
+        await db.close()
+
+
+async def bulk_insert_ssls(rows: list[dict]):
+    db = await get_db()
+    try:
+        now = datetime.now().isoformat()
+        await db.executemany(
+            "INSERT INTO ssl_certs (product_name, domain, renewal_date, amount, status, notes, created_at) VALUES (?,?,?,?,?,?,?)",
+            [(r["product_name"], r["domain"], r["renewal_date"], r.get("amount",""), r["status"], r.get("notes",""), now) for r in rows]
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_ssls() -> list[dict]:
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM ssl_certs ORDER BY renewal_date ASC")
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        await db.close()
+
+
+async def delete_ssl(ssl_id: int) -> bool:
+    db = await get_db()
+    try:
+        cursor = await db.execute("DELETE FROM ssl_certs WHERE id=?", (ssl_id,))
         await db.commit()
         return cursor.rowcount > 0
     finally:

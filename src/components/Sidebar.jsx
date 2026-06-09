@@ -1,4 +1,4 @@
-import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid } from 'lucide-react'
+import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid, Globe } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -22,6 +22,11 @@ const modules = [
     id: 'lighthouse',
     name: 'Lighthouse',
     icon: Zap,
+  },
+  {
+    id: 'tracking',
+    name: 'Domain / SSL',
+    icon: Globe,
   },
 ]
 
