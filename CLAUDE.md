@@ -6,7 +6,7 @@ Yeni sürüm çıkarken bu adımları takip et:
 
 ### 1. Versiyon Güncelle
 - `package.json` → `"version": "X.Y.Z"`
-- `src/components/Settings.jsx` → `const APP_VERSION = 'X.Y.Z'`
+- Sidebar ve Settings artık versiyonu `package.json`'dan import ediyor, başka yerde güncelleme gerekmez.
 
 ### 2. Commit & Push
 ```bash
