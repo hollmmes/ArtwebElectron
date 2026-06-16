@@ -3,7 +3,15 @@ import json
 import os
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "artweb.db")
+def _get_db_path():
+    # PyInstaller bundle'da __file__ geçici _MEIPASS klasörüne işaret eder — kalıcı değil
+    # Her zaman %APPDATA%\ArtWebToolkit\artweb.db kullan
+    app_data = os.environ.get('APPDATA') or os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming')
+    data_dir = os.path.join(app_data, 'ArtWebToolkit')
+    os.makedirs(data_dir, exist_ok=True)
+    return os.path.join(data_dir, 'artweb.db')
+
+DB_PATH = _get_db_path()
 
 
 async def get_db():
