@@ -176,11 +176,35 @@ ipcMain.on('download-update', () => {
     mainWindow?.webContents.send('update-error', err?.message || 'İndirme başarısız')
   })
 })
-ipcMain.on('install-update', () => {
+ipcMain.on('install-update', async () => {
   stopBackend()
   if (mainWindow) mainWindow.hide()
   app.removeAllListeners('window-all-closed')
-  setTimeout(() => {
-    autoUpdater.quitAndInstall(true, true)
-  }, 1000)
+
+  // Backend process ve port tamamen kapanana kadar bekle (max 4s)
+  await waitPortClosed(BACKEND_PORT, 4000)
+
+  autoUpdater.quitAndInstall(true, true)
 })
+
+function waitPortClosed(port, timeoutMs) {
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const check = () => {
+      try {
+        const out = execSync(`netstat -ano | findstr ":${port} "`, {
+          encoding: 'utf-8', shell: true, windowsHide: true, timeout: 1000,
+        })
+        // Hâlâ LISTENING varsa bekle
+        if (out.includes('LISTENING') && Date.now() - start < timeoutMs) {
+          setTimeout(check, 300)
+          return
+        }
+      } catch {
+        // netstat çıktı vermediyse port kapanmış demektir
+      }
+      resolve()
+    }
+    check()
+  })
+}
