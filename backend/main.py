@@ -99,10 +99,14 @@ def system_status():
         if os.path.exists(ms_playwright):
             for d in os.listdir(ms_playwright):
                 if d.lower().startswith('chromium'):
-                    exe = os.path.join(ms_playwright, d, 'chrome-win', 'chrome.exe')
-                    if os.path.exists(exe):
-                        chromium_ok = True
-                        break
+                    base = os.path.join(ms_playwright, d)
+                    for sub in ('chrome-win', 'chrome-win64', 'chrome-linux', 'chrome-mac'):
+                        exe = os.path.join(base, sub, 'chrome.exe')
+                        if os.path.exists(exe):
+                            chromium_ok = True
+                            break
+                if chromium_ok:
+                    break
         checks["playwright_chromium"] = {
             "label": "Playwright Chromium",
             "installed": chromium_ok,

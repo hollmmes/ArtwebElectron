@@ -21,8 +21,10 @@ function isChromiumInstalled() {
     if (!fs.existsSync(msPlaywright)) return false
     for (const dir of fs.readdirSync(msPlaywright)) {
       if (!dir.toLowerCase().startsWith('chromium')) continue
-      const exe = path.join(msPlaywright, dir, 'chrome-win', 'chrome.exe')
-      if (fs.existsSync(exe)) return true
+      const base = path.join(msPlaywright, dir)
+      for (const sub of ['chrome-win', 'chrome-win64']) {
+        if (fs.existsSync(path.join(base, sub, 'chrome.exe'))) return true
+      }
     }
   } catch {}
   return false
