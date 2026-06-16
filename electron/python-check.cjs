@@ -54,7 +54,7 @@ function getBackendPath() {
 function checkDepsInstalled(python) {
   try {
     execSync(
-      `"${python}" -c "import fastapi, uvicorn, playwright, pydantic, aiosqlite, aiohttp"`,
+      `"${python}" -c "import fastapi, uvicorn, playwright, pydantic, aiosqlite, aiohttp, openpyxl"`,
       { encoding: 'utf-8', timeout: 10000, windowsHide: true, shell: true }
     )
     return true

@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 from services.maps_scraper import scrape_google_maps_stream
 from services.email_finder import find_emails_from_website
-from services.exporter import export_to_csv, export_to_json
+from services.exporter import export_to_csv, export_to_json, export_to_xml, export_to_xlsx
 from database import (
     save_business, get_existing_businesses, save_search,
     get_search_history, get_search_history_grouped,
@@ -117,33 +117,70 @@ async def find_email(request: EmailFinderRequest):
     return {"emails": emails}
 
 
+def _get_businesses_for_export(businesses_result):
+    return businesses_result
+
+
+async def _fetch_businesses(query: str, location: str):
+    if query:
+        return await get_existing_businesses(query, location)
+    result = await get_all_businesses(limit=5000, offset=0)
+    return result["businesses"]
+
+
+def _safe_filename(query: str) -> str:
+    name = query or 'tumu'
+    # Türkçe karakter dönüşümü — dosya adında sorun çıkartır
+    tr_map = str.maketrans('çğıöşüÇĞİÖŞÜ', 'cgiosuCGIOSU')
+    return name.translate(tr_map).replace(' ', '_')
+
+
 @router.get("/export/csv")
 async def export_csv(query: str = "", location: str = ""):
-    if query:
-        businesses = await get_existing_businesses(query, location)
-    else:
-        result = await get_all_businesses(limit=5000, offset=0)
-        businesses = result["businesses"]
-
-    csv_content = export_to_csv(businesses)
+    businesses = await _fetch_businesses(query, location)
+    content = export_to_csv(businesses)
+    filename = f"isletmeler_{_safe_filename(query)}.csv"
     return Response(
-        content=csv_content,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=isletmeler_{query or 'tumu'}.csv"}
+        content=content,
+        media_type="text/csv; charset=utf-8-sig",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
     )
 
 
 @router.get("/export/json")
 async def export_json_file(query: str = "", location: str = ""):
-    if query:
-        businesses = await get_existing_businesses(query, location)
-    else:
-        result = await get_all_businesses(limit=5000, offset=0)
-        businesses = result["businesses"]
-
-    json_content = export_to_json(businesses)
+    businesses = await _fetch_businesses(query, location)
+    content = export_to_json(businesses)
+    filename = f"isletmeler_{_safe_filename(query)}.json"
     return Response(
-        content=json_content,
-        media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename=isletmeler_{query or 'tumu'}.json"}
+        content=content,
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
+    )
+
+
+@router.get("/export/xml")
+async def export_xml_file(query: str = "", location: str = ""):
+    businesses = await _fetch_businesses(query, location)
+    content = export_to_xml(businesses)
+    filename = f"isletmeler_{_safe_filename(query)}.xml"
+    return Response(
+        content=content,
+        media_type="application/xml; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
+    )
+
+
+@router.get("/export/xlsx")
+async def export_xlsx_file(query: str = "", location: str = ""):
+    businesses = await _fetch_businesses(query, location)
+    try:
+        content = export_to_xlsx(businesses)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    filename = f"isletmeler_{_safe_filename(query)}.xlsx"
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
     )

@@ -187,6 +187,7 @@ ipcMain.on('install-update', () => {
     mainWindow.hide()
   }
   setTimeout(() => {
+    app.removeAllListeners('window-all-closed')
     autoUpdater.quitAndInstall(false, true)
-  }, 500)
+  }, 800)
 })
