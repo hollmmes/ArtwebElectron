@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const { spawn } = require('child_process')
+const { spawn, execSync } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 const { checkPythonEnvironment, findPython } = require('./python-check.cjs')
 
@@ -13,12 +13,33 @@ let mainWindow
 let pythonProcess
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev')
+const BACKEND_PORT = 42310
 
 function getBackendDir() {
-  if (isDev) {
-    return path.join(__dirname, '..', 'backend')
-  }
+  if (isDev) return path.join(__dirname, '..', 'backend')
   return path.join(process.resourcesPath, 'backend')
+}
+
+// Portu dinleyen process'i öldür (önceki oturumdan kalan backend için)
+function killPortProcess(port) {
+  try {
+    const output = execSync(`netstat -ano | findstr ":${port} "`, {
+      encoding: 'utf-8',
+      shell: true,
+      windowsHide: true,
+      timeout: 3000,
+    })
+    for (const line of output.split('\n')) {
+      if (!line.includes('LISTENING')) continue
+      const pid = line.trim().split(/\s+/).pop()
+      if (pid && pid !== '0') {
+        execSync(`taskkill /PID ${pid} /F`, { windowsHide: true, shell: true, timeout: 3000 })
+        console.log(`[Backend] Killed stale process on port ${port} (PID ${pid})`)
+      }
+    }
+  } catch {
+    // Port boşsa veya taskkill başarısızsa sessizce devam et
+  }
 }
 
 function createWindow() {
@@ -67,7 +88,7 @@ function setupAutoUpdater() {
     mainWindow?.webContents.send('update-available', info)
   })
 
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', () => {
     console.log('[Updater] No update available, current is latest')
     mainWindow?.webContents.send('update-not-available')
   })
@@ -84,12 +105,14 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[Updater] Error:', err)
-    const message = err?.message || 'Güncelleme hatası oluştu'
-    mainWindow?.webContents.send('update-error', message)
+    mainWindow?.webContents.send('update-error', err?.message || 'Güncelleme hatası oluştu')
   })
 }
 
 function startPythonBackend() {
+  // Önceki oturumdan kalan backend varsa öldür
+  killPortProcess(BACKEND_PORT)
+
   const pythonPath = findPython() || 'python'
   const backendDir = getBackendDir()
   const backendPath = path.join(backendDir, 'main.py')
@@ -124,9 +147,11 @@ function startPythonBackend() {
 
 function stopPythonBackend() {
   if (pythonProcess) {
-    pythonProcess.kill()
+    try { pythonProcess.kill('SIGTERM') } catch {}
     pythonProcess = null
   }
+  // Port üzerinden de garantiye al
+  killPortProcess(BACKEND_PORT)
 }
 
 app.whenReady().then(async () => {
@@ -183,11 +208,17 @@ ipcMain.on('download-update', () => {
 
 ipcMain.on('install-update', () => {
   stopPythonBackend()
+
   if (mainWindow) {
     mainWindow.hide()
   }
+
+  // window-all-closed tetiklenip app.quit() çağrılmasın
+  app.removeAllListeners('window-all-closed')
+
+  // isSilent=true: NSIS sessiz kurulum → "app açık" diyaloğu çıkmaz, direkt kurar
+  // isForceRunAfter=true: kurulumdan sonra uygulamayı yeniden başlat
   setTimeout(() => {
-    app.removeAllListeners('window-all-closed')
-    autoUpdater.quitAndInstall(false, true)
-  }, 800)
+    autoUpdater.quitAndInstall(true, true)
+  }, 1000)
 })
