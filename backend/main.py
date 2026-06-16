@@ -62,6 +62,8 @@ def health():
     return {"status": "ok"}
 
 
+
+
 @app.get("/api/status")
 def system_status():
     checks = {}
@@ -92,39 +94,58 @@ def system_status():
         except ImportError:
             checks[pkg] = {"label": label, "installed": False, "version": None, "ok": False}
 
-    # Playwright Chromium — filesystem üzerinden kontrol (sync_playwright() bundle'da subprocess açar, hata verir)
+    # Playwright Chromium — filesystem üzerinden kontrol
+    chromium_ok = False
     try:
-        ms_playwright = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'ms-playwright')
-        chromium_ok = False
+        def get_local_appdata():
+            # 1. Env var
+            v = os.environ.get('LOCALAPPDATA', '')
+            if v and os.path.isdir(v):
+                return v
+            # 2. USERPROFILE üzerinden
+            up = os.environ.get('USERPROFILE', '')
+            if up:
+                p = os.path.join(up, 'AppData', 'Local')
+                if os.path.isdir(p):
+                    return p
+            # 3. Windows registry
+            try:
+                import winreg
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                                    r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as k:
+                    val, _ = winreg.QueryValueEx(k, 'Local AppData')
+                    if val and os.path.isdir(val):
+                        return val
+            except Exception:
+                pass
+            # 4. expanduser fallback
+            return os.path.join(os.path.expanduser('~'), 'AppData', 'Local')
+
+        local = get_local_appdata()
+        ms_playwright = os.path.join(local, 'ms-playwright')
         if os.path.exists(ms_playwright):
             for d in os.listdir(ms_playwright):
-                if d.lower().startswith('chromium'):
-                    base = os.path.join(ms_playwright, d)
-                    for sub in ('chrome-win', 'chrome-win64', 'chrome-linux', 'chrome-mac'):
-                        exe = os.path.join(base, sub, 'chrome.exe')
-                        if os.path.exists(exe):
-                            chromium_ok = True
-                            break
+                if not d.lower().startswith('chromium-'):
+                    continue
+                base = os.path.join(ms_playwright, d)
+                for sub in ('chrome-win', 'chrome-win64'):
+                    if os.path.exists(os.path.join(base, sub, 'chrome.exe')):
+                        chromium_ok = True
+                        break
                 if chromium_ok:
                     break
-        checks["playwright_chromium"] = {
-            "label": "Playwright Chromium",
-            "installed": chromium_ok,
-            "version": None,
-            "ok": chromium_ok,
-        }
     except Exception:
-        checks["playwright_chromium"] = {
-            "label": "Playwright Chromium",
-            "installed": False,
-            "version": None,
-            "ok": False,
-        }
+        pass
+    checks["playwright_chromium"] = {
+        "label": "Playwright Chromium",
+        "installed": chromium_ok,
+        "version": None,
+        "ok": chromium_ok,
+    }
 
     # Database
     try:
         from database import DB_PATH
-        import os
         db_exists = os.path.exists(DB_PATH)
         checks["database"] = {
             "label": "Veritabanı (SQLite)",
