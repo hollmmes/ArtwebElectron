@@ -70,7 +70,7 @@ function createLoadingWindow() {
     frame: false,
     resizable: false,
     center: true,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     backgroundColor: '#020617',
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   })
@@ -173,7 +173,7 @@ function createLoadingWindow() {
     </div>
     <div class="pct" id="pct"></div>
   </div>
-  <div class="warning">Bu işlem yalnızca ilk açılışta yapılır. Lütfen bekleyin.</div>
+  <div class="warning" id="warning">Bu işlem yalnızca ilk açılışta yapılır. Lütfen bekleyin.</div>
 
   <script>
     window.setStep = function(step, title, badge) {
@@ -206,6 +206,17 @@ function createLoadingWindow() {
       document.getElementById('dot1').className = 'dot done'
       window.setProgress(100)
       window.setDetail('Tamamlandı')
+    }
+    window.setError = function(msg) {
+      document.getElementById('stepTitle').textContent = 'Kurulum Hatası'
+      document.getElementById('stepTitle').style.color = '#f87171'
+      window.setDetail(msg || 'Bir hata oluştu')
+      document.getElementById('warning').textContent = 'Lütfen bekleyin, hata bildirimi gösteriliyor...'
+      document.getElementById('warning').style.color = '#f87171'
+      const bar = document.getElementById('bar')
+      bar.className = 'progress-bar'
+      bar.style.background = '#ef4444'
+      bar.style.width = '100%'
     }
   </script>
 </body>
@@ -258,13 +269,19 @@ function runPipInstall(python, requirementsPath, backendPath, win) {
 
     proc.stdout.on('data', (d) => d.toString().split('\n').forEach(parseLine))
     proc.stderr.on('data', (d) => {
-      stderr += d.toString()
-      d.toString().split('\n').forEach(parseLine)
+      const text = d.toString()
+      // WARNING/NOTICE satırlarını hata sayma, sadece gerçek hataları topla
+      text.split('\n').forEach(line => {
+        const l = line.trim()
+        if (!l || l.startsWith('WARNING') || l.startsWith('NOTICE')) return
+        stderr += line + '\n'
+      })
+      text.split('\n').forEach(parseLine)
     })
 
     proc.on('close', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(stderr || `pip çıkış kodu: ${code}`))
+      else reject(new Error(stderr.trim() || `pip çıkış kodu: ${code}`))
     })
     proc.on('error', reject)
   })
@@ -337,7 +354,7 @@ async function installDependencies(python, win) {
   await runPlaywrightInstall(python, backendPath, win)
 
   updateWindow(win, 'setDone')
-  await new Promise(r => setTimeout(r, 600))
+  await new Promise(r => setTimeout(r, 800))
 }
 
 async function checkPythonEnvironment() {
@@ -371,13 +388,24 @@ async function checkPythonEnvironment() {
     if (!loadingWin.isDestroyed()) loadingWin.close()
     return true
   } catch (err) {
-    if (!loadingWin.isDestroyed()) loadingWin.close()
+    // Önce loading ekranında hatayı göster, sonra kapat ve dialog aç
+    if (!loadingWin.isDestroyed()) {
+      const shortMsg = (err.message || '').split('\n')[0].substring(0, 80)
+      updateWindow(loadingWin, 'setError', shortMsg)
+      await new Promise(r => setTimeout(r, 1200))
+      loadingWin.hide()
+      await new Promise(r => setTimeout(r, 150))
+      loadingWin.close()
+    }
+
+    const detail = (err.message || 'Bilinmeyen hata')
+      + '\n\nManuel kurulum için terminalde:\npip install -r requirements.txt'
 
     const result = await dialog.showMessageBox({
       type: 'error',
       title: 'Kurulum Hatası',
       message: 'Python bağımlılıkları kurulamadı.',
-      detail: err.message + '\n\nManuel kurulum için terminalde:\npip install -r requirements.txt',
+      detail,
       buttons: ['Yine de Devam Et', 'Çıkış'],
       defaultId: 1,
       cancelId: 1,
