@@ -182,5 +182,11 @@ ipcMain.on('download-update', () => {
 })
 
 ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall(false, true)
+  stopPythonBackend()
+  if (mainWindow) {
+    mainWindow.hide()
+  }
+  setTimeout(() => {
+    autoUpdater.quitAndInstall(false, true)
+  }, 500)
 })
