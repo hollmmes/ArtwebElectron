@@ -8,15 +8,30 @@ function getBackendExe() {
 }
 
 function getChromiumMarker() {
-  return path.join(process.resourcesPath, 'backend', '.chromium-installed')
+  const appData = process.env.APPDATA || process.env.LOCALAPPDATA || require('os').tmpdir()
+  return path.join(appData, 'ArtWebToolkit', '.chromium-installed')
 }
 
 function isChromiumInstalled() {
-  return fs.existsSync(getChromiumMarker())
+  // Önce marker'ı kontrol et (hızlı yol)
+  if (fs.existsSync(getChromiumMarker())) return true
+  // Fallback: ms-playwright klasöründe chrome.exe ara
+  try {
+    const msPlaywright = path.join(process.env.LOCALAPPDATA || '', 'ms-playwright')
+    if (!fs.existsSync(msPlaywright)) return false
+    for (const dir of fs.readdirSync(msPlaywright)) {
+      if (!dir.toLowerCase().startsWith('chromium')) continue
+      const exe = path.join(msPlaywright, dir, 'chrome-win', 'chrome.exe')
+      if (fs.existsSync(exe)) return true
+    }
+  } catch {}
+  return false
 }
 
 function markChromiumInstalled() {
-  fs.writeFileSync(getChromiumMarker(), '1')
+  const markerPath = getChromiumMarker()
+  fs.mkdirSync(path.dirname(markerPath), { recursive: true })
+  fs.writeFileSync(markerPath, '1')
 }
 
 function createLoadingWindow() {

@@ -92,13 +92,17 @@ def system_status():
         except ImportError:
             checks[pkg] = {"label": label, "installed": False, "version": None, "ok": False}
 
-    # Playwright Chromium
+    # Playwright Chromium — filesystem üzerinden kontrol (sync_playwright() bundle'da subprocess açar, hata verir)
     try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            browser_path = p.chromium.executable_path
-            import os
-            chromium_ok = os.path.exists(browser_path)
+        ms_playwright = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'ms-playwright')
+        chromium_ok = False
+        if os.path.exists(ms_playwright):
+            for d in os.listdir(ms_playwright):
+                if d.lower().startswith('chromium'):
+                    exe = os.path.join(ms_playwright, d, 'chrome-win', 'chrome.exe')
+                    if os.path.exists(exe):
+                        chromium_ok = True
+                        break
         checks["playwright_chromium"] = {
             "label": "Playwright Chromium",
             "installed": chromium_ok,
