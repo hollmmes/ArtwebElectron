@@ -5,13 +5,26 @@ import os
 # sadece Playwright Chromium'u kur ve çık
 if '--install-chromium' in sys.argv:
     import subprocess
+    # stdout/stderr'i UTF-8 yap (Windows cp1252 hatası önlenir)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     try:
-        from playwright._impl._driver import compute_driver_executable
-        driver = compute_driver_executable()
-        result = subprocess.run([str(driver), 'install', 'chromium'])
+        # PyInstaller bundle'ında _MEIPASS altında, normal kurulumda site-packages altında
+        base = getattr(sys, '_MEIPASS', None)
+        if base:
+            node_exe = os.path.join(base, 'playwright', 'driver', 'node.exe')
+            cli_js  = os.path.join(base, 'playwright', 'driver', 'package', 'cli.js')
+        else:
+            from playwright._impl._driver import compute_driver_executable
+            node_exe, cli_js = compute_driver_executable()
+            node_exe = str(node_exe)
+            cli_js   = str(cli_js)
+        result = subprocess.run([node_exe, cli_js, 'install', 'chromium'])
         sys.exit(result.returncode)
     except Exception as e:
-        print(f'Chromium kurulum hatası: {e}', flush=True)
+        print(f'Chromium install error: {e}', flush=True)
         sys.exit(1)
 
 import uvicorn
