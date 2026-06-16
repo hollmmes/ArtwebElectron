@@ -1,4 +1,19 @@
 import sys
+import os
+
+# PyInstaller ile paketlendiğinde --install-chromium argümanı gelirse
+# sadece Playwright Chromium'u kur ve çık
+if '--install-chromium' in sys.argv:
+    import subprocess
+    try:
+        from playwright._impl._driver import compute_driver_executable
+        driver = compute_driver_executable()
+        result = subprocess.run([str(driver), 'install', 'chromium'])
+        sys.exit(result.returncode)
+    except Exception as e:
+        print(f'Chromium kurulum hatası: {e}', flush=True)
+        sys.exit(1)
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,7 +60,7 @@ def system_status():
         "ok": sys.version_info >= (3, 10),
     }
 
-    # Her kütüphane
+    # Paket kontrolü — PyInstaller bundle'da hepsi her zaman mevcut
     libs = {
         "fastapi": "FastAPI",
         "uvicorn": "Uvicorn",

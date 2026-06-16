@@ -8,6 +8,8 @@ __pycache__/
 backend/.venv/
 backend/venv/
 backend/artweb.db
+backend/dist_pyinstaller/
+backend/build_pyinstaller/
 backend/lighthouse_reports/
 .DS_Store
 Thumbs.db
