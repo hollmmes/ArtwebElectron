@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RefreshCw, CheckCircle, Download, AlertCircle, Moon, Sun, Activity, Package, Database, Chrome } from 'lucide-react'
+import { RefreshCw, CheckCircle, Download, AlertCircle, Moon, Sun, Activity, Package, Database, Globe } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { API_BASE } from '../config.js'
 import { version as APP_VERSION } from '../../package.json'
@@ -149,7 +149,7 @@ export default function Settings() {
             {/* Playwright Chromium */}
             <StatusRow
               isDark={isDark}
-              icon={<Chrome size={13} />}
+              icon={<Globe size={13} />}
               label="Playwright Chromium"
               ok={sysStatus.checks.playwright_chromium?.ok}
               detail={sysStatus.checks.playwright_chromium?.ok ? 'Kurulu' : 'Kurulu değil'}
