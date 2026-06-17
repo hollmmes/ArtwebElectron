@@ -1,32 +1,6 @@
 import sys
 import os
 
-# PyInstaller ile paketlendiğinde --install-chromium argümanı gelirse
-# sadece Playwright Chromium'u kur ve çık
-if '--install-chromium' in sys.argv:
-    import subprocess
-    # stdout/stderr'i UTF-8 yap (Windows cp1252 hatası önlenir)
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    if hasattr(sys.stderr, 'reconfigure'):
-        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    try:
-        # PyInstaller bundle'ında _MEIPASS altında, normal kurulumda site-packages altında
-        base = getattr(sys, '_MEIPASS', None)
-        if base:
-            node_exe = os.path.join(base, 'playwright', 'driver', 'node.exe')
-            cli_js  = os.path.join(base, 'playwright', 'driver', 'package', 'cli.js')
-        else:
-            from playwright._impl._driver import compute_driver_executable
-            node_exe, cli_js = compute_driver_executable()
-            node_exe = str(node_exe)
-            cli_js   = str(cli_js)
-        result = subprocess.run([node_exe, cli_js, 'install', 'chromium'])
-        sys.exit(result.returncode)
-    except Exception as e:
-        print(f'Chromium install error: {e}', flush=True)
-        sys.exit(1)
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -94,40 +68,15 @@ def system_status():
         except ImportError:
             checks[pkg] = {"label": label, "installed": False, "version": None, "ok": False}
 
-    # Playwright Chromium — filesystem üzerinden kontrol
+    # Playwright Chromium — PLAYWRIGHT_BROWSERS_PATH env üzerinden kontrol (bundle'dan gelir)
     chromium_ok = False
     try:
-        def get_local_appdata():
-            # 1. Env var
-            v = os.environ.get('LOCALAPPDATA', '')
-            if v and os.path.isdir(v):
-                return v
-            # 2. USERPROFILE üzerinden
-            up = os.environ.get('USERPROFILE', '')
-            if up:
-                p = os.path.join(up, 'AppData', 'Local')
-                if os.path.isdir(p):
-                    return p
-            # 3. Windows registry
-            try:
-                import winreg
-                with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                                    r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as k:
-                    val, _ = winreg.QueryValueEx(k, 'Local AppData')
-                    if val and os.path.isdir(val):
-                        return val
-            except Exception:
-                pass
-            # 4. expanduser fallback
-            return os.path.join(os.path.expanduser('~'), 'AppData', 'Local')
-
-        local = get_local_appdata()
-        ms_playwright = os.path.join(local, 'ms-playwright')
-        if os.path.exists(ms_playwright):
-            for d in os.listdir(ms_playwright):
+        browsers_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH', '')
+        if browsers_path and os.path.exists(browsers_path):
+            for d in os.listdir(browsers_path):
                 if not d.lower().startswith('chromium-'):
                     continue
-                base = os.path.join(ms_playwright, d)
+                base = os.path.join(browsers_path, d)
                 for sub in ('chrome-win', 'chrome-win64'):
                     if os.path.exists(os.path.join(base, sub, 'chrome.exe')):
                         chromium_ok = True

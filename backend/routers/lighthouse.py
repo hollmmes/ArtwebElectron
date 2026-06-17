@@ -8,7 +8,8 @@ from datetime import datetime
 
 router = APIRouter()
 
-REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lighthouse_reports")
+_app_data = os.environ.get('APPDATA') or os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming')
+REPORTS_DIR = os.path.join(_app_data, 'ArtWebToolkit', 'lighthouse_reports')
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 

@@ -115,10 +115,16 @@ function startBackend() {
     backendCwd = getBackendDir()
   }
 
+  const backendEnv = { ...process.env, PYTHONIOENCODING: 'utf-8' }
+  if (!isDev) {
+    // Chromium bundle'dan okunacak şekilde Playwright'a yolunu göster
+    backendEnv.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'backend', 'ms-playwright')
+  }
+
   pythonProcess = spawn(backendCmd, backendArgs, {
     cwd: backendCwd,
     shell: isDev,
-    env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+    env: backendEnv,
     windowsHide: true,
   })
 

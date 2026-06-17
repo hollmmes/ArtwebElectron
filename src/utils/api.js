@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:42310'
+import { API_BASE } from '../config.js'
 
 export async function searchBusinessesStream(query, location, maxResults, { onResult, onProgress, onStatus, onDone, onError }) {
   try {

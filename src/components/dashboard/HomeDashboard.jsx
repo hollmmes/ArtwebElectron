@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { AlertTriangle, Globe, Shield, Server, RefreshCw } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const API_BASE = 'http://localhost:42310'
+import { API_BASE } from '../../config.js'
 
 const CITIES = [
   { name: 'Giresun', lat: 40.9128, lon: 38.3895 },

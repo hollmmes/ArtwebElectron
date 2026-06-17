@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { defaultSites } from '../../data/sites'
 import SiteDetail from './SiteDetail'
 
-const API_BASE = 'http://localhost:42310'
+import { API_BASE } from '../../config.js'
 const DEFAULT_URLS = new Set(defaultSites.map(s => s.url))
 
 async function fetchCustomSites() {

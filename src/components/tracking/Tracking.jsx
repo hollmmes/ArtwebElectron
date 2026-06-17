@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Globe, Shield, Server, Search, Plus, Trash2, Edit2, X, Check, ChevronUp, ChevronDown, AlertTriangle, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const API_BASE = 'http://localhost:42310'
+import { API_BASE } from '../../config.js'
 
 const STATUS_CFG = {
   'Aktif':         { color: 'emerald', label: 'Aktif' },

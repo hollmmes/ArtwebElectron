@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
-
-const API_BASE = 'http://localhost:42310'
+import { API_BASE } from '../config.js'
 
 const CHECKS = [
-  { id: 'python', label: 'Python ortami kontrol ediliyor' },
   { id: 'backend', label: 'Backend servisi baslatiliyor' },
   { id: 'database', label: 'Veritabani baglantisi' },
   { id: 'update', label: 'Guncelleme kontrol ediliyor' },
@@ -24,12 +22,7 @@ export default function LoadingScreen({ onComplete }) {
   }
 
   const runChecks = async () => {
-    // 1. Python
-    updateCheck('python', 'running')
-    await sleep(600)
-    updateCheck('python', 'done')
-
-    // 2. Backend
+    // 1. Backend
     updateCheck('backend', 'running')
     let backendReady = false
     for (let i = 0; i < 20; i++) {
