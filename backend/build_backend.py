@@ -45,7 +45,7 @@ if not os.path.exists(ms_playwright_src):
 
 chromium_dirs = [
     d for d in os.listdir(ms_playwright_src)
-    if d.lower().startswith('chromium-') and 'headless' not in d.lower()
+    if d.lower().startswith('chromium')
 ]
 if not chromium_dirs:
     print('HATA: ms-playwright altinda chromium klasoru bulunamadi.', file=sys.stderr)
