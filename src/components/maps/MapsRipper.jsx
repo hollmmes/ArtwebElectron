@@ -142,6 +142,7 @@ export default function MapsRipper() {
             <>
               {[
                 { fmt: 'xlsx', label: 'Excel', color: isDark ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+                { fmt: 'html', label: 'HTML',  color: isDark ? 'bg-violet-500/10 text-violet-400 hover:bg-violet-500/20'   : 'bg-violet-50 text-violet-600 hover:bg-violet-100' },
                 { fmt: 'csv',  label: 'CSV',   color: isDark ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'         : 'bg-teal-50 text-teal-600 hover:bg-teal-100' },
                 { fmt: 'xml',  label: 'XML',   color: isDark ? 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20'   : 'bg-orange-50 text-orange-600 hover:bg-orange-100' },
                 { fmt: 'json', label: 'JSON',  color: isDark ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'         : 'bg-blue-50 text-blue-600 hover:bg-blue-100' },
