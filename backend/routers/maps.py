@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 from services.maps_scraper import scrape_google_maps_stream
 from services.email_finder import find_emails_from_website
-from services.exporter import export_to_csv, export_to_json, export_to_xml, export_to_xlsx
+from services.exporter import export_to_csv, export_to_json, export_to_xml, export_to_xlsx, export_to_html
 from database import (
     save_business, get_existing_businesses, save_search,
     get_search_history, get_search_history_grouped,
@@ -182,5 +182,17 @@ async def export_xlsx_file(query: str = "", location: str = ""):
     return Response(
         content=content,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
+    )
+
+
+@router.get("/export/html")
+async def export_html_file(query: str = "", location: str = ""):
+    businesses = await _fetch_businesses(query, location)
+    content = export_to_html(businesses, query=query, location=location)
+    filename = f"isletmeler_{_safe_filename(query)}.html"
+    return Response(
+        content=content,
+        media_type="text/html; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"}
     )
