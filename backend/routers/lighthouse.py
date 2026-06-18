@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import asyncio
 import json
 import os
+import shutil
 from datetime import datetime
 
 router = APIRouter()
@@ -11,6 +12,37 @@ router = APIRouter()
 _app_data = os.environ.get('APPDATA') or os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming')
 REPORTS_DIR = os.path.join(_app_data, 'ArtWebToolkit', 'lighthouse_reports')
 os.makedirs(REPORTS_DIR, exist_ok=True)
+
+
+def _get_lighthouse_cmd(url: str, output_path: str, extra_flags: str) -> str:
+    """
+    Production'da npx çalışmaz — Node.js PATH'te olmayabilir.
+    Önce sistem node'unu, sonra Electron'ın node'unu, en son npx'i dene.
+    """
+    system_node = os.environ.get('SYSTEM_NODE_EXE') or shutil.which('node')
+
+    if system_node and os.path.exists(system_node):
+        # node ile lighthouse CLI'yi çalıştır
+        # Global lighthouse: node -e "require('lighthouse/cli/run.js')" veya npx
+        lh_cli = shutil.which('lighthouse')
+        if lh_cli:
+            node_cmd = f'"{system_node}" "{lh_cli}"'
+        else:
+            node_cmd = f'"{system_node}" -e "require(\'lighthouse/cli/run.js\')"'
+        return (
+            f'{node_cmd} "{url}" '
+            f'--output=html --output-path="{output_path}" '
+            f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
+            f'{extra_flags} --locale=tr --quiet'
+        )
+
+    # Fallback: npx
+    return (
+        f'npx lighthouse "{url}" '
+        f'--output=html --output-path="{output_path}" '
+        f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
+        f'{extra_flags} --locale=tr --quiet'
+    )
 
 
 class AuditRequest(BaseModel):
@@ -39,12 +71,9 @@ async def run_audit(request: AuditRequest):
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Masaustu analizi baslatiliyor...', 'step': 'desktop_start', 'url': url})}\n\n"
 
-            desktop_cmd = (
-                f'npx lighthouse "{url}" '
-                f'--output=html --output-path="{desktop_path}" '
-                f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
-                f'--form-factor=desktop --screenEmulation.disabled --throttling-method=simulate '
-                f'--preset=desktop --locale=tr --quiet'
+            desktop_cmd = _get_lighthouse_cmd(
+                url, desktop_path,
+                '--form-factor=desktop --screenEmulation.disabled --throttling-method=simulate --preset=desktop'
             )
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Masaustu sayfasi yukleniyor ve olculuyor...', 'step': 'desktop_running', 'url': url})}\n\n"
@@ -75,12 +104,9 @@ async def run_audit(request: AuditRequest):
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Mobil analizi baslatiliyor...', 'step': 'mobile_start', 'url': url})}\n\n"
 
-            mobile_cmd = (
-                f'npx lighthouse "{url}" '
-                f'--output=html --output-path="{mobile_path}" '
-                f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
-                f'--form-factor=mobile --screenEmulation.mobile --throttling-method=simulate '
-                f'--locale=tr --quiet'
+            mobile_cmd = _get_lighthouse_cmd(
+                url, mobile_path,
+                '--form-factor=mobile --screenEmulation.mobile --throttling-method=simulate'
             )
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Mobil emulasyon ve 4G simulasyonu aktif...', 'step': 'mobile_running', 'url': url})}\n\n"
