@@ -179,9 +179,9 @@ function startBackend() {
     // Lighthouse kurulu değilse arka planda kur
     if (systemNode && !lighthouseExe) {
       console.log('[Lighthouse] Kurulu değil, yükleniyor...')
-      const npmExe = path.join(path.dirname(systemNode), 'npm.cmd')
-      const installProc = spawn(npmExe, ['install', '-g', 'lighthouse'], {
+      const installProc = spawn('npm', ['install', '-g', 'lighthouse'], {
         shell: true, windowsHide: true, detached: false,
+        env: { ...process.env },
       })
       installProc.on('close', (code) => {
         if (code === 0) {
