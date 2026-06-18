@@ -162,9 +162,21 @@ function startBackend() {
 
   const backendEnv = { ...process.env, PYTHONIOENCODING: 'utf-8' }
   if (!isDev) {
-    // Chromium bundle'dan okunacak şekilde Playwright'a yolunu göster
     backendEnv.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'backend', 'ms-playwright')
   }
+
+  // Node.js yolunu backend'e geç (Lighthouse için)
+  try {
+    const { execSync } = require('child_process')
+    const nodeExe = process.execPath  // Electron'un node'u
+    // Sistem node'unu da dene
+    let systemNode = ''
+    try {
+      systemNode = execSync('where node', { windowsHide: true, encoding: 'utf-8' }).split('\n')[0].trim()
+    } catch {}
+    backendEnv.ELECTRON_NODE_EXE = nodeExe
+    if (systemNode) backendEnv.SYSTEM_NODE_EXE = systemNode
+  } catch {}
 
   pythonProcess = spawn(backendCmd, backendArgs, {
     cwd: backendCwd,
