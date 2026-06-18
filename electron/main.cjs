@@ -165,17 +165,18 @@ function startBackend() {
     backendEnv.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'backend', 'ms-playwright')
   }
 
-  // Node.js yolunu backend'e geç (Lighthouse için)
+  // Node.js ve Lighthouse yollarını backend'e geç
   try {
-    const { execSync } = require('child_process')
-    const nodeExe = process.execPath  // Electron'un node'u
-    // Sistem node'unu da dene
     let systemNode = ''
+    let lighthouseExe = ''
     try {
-      systemNode = execSync('where node', { windowsHide: true, encoding: 'utf-8' }).split('\n')[0].trim()
+      systemNode = execSync('where node', { windowsHide: true, encoding: 'utf-8', shell: true }).split('\n')[0].trim()
     } catch {}
-    backendEnv.ELECTRON_NODE_EXE = nodeExe
+    try {
+      lighthouseExe = execSync('where lighthouse', { windowsHide: true, encoding: 'utf-8', shell: true }).split('\n')[0].trim()
+    } catch {}
     if (systemNode) backendEnv.SYSTEM_NODE_EXE = systemNode
+    if (lighthouseExe) backendEnv.LIGHTHOUSE_EXE = lighthouseExe
   } catch {}
 
   pythonProcess = spawn(backendCmd, backendArgs, {

@@ -15,34 +15,24 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 
 
 def _get_lighthouse_cmd(url: str, output_path: str, extra_flags: str) -> str:
-    """
-    Production'da npx çalışmaz — Node.js PATH'te olmayabilir.
-    Önce sistem node'unu, sonra Electron'ın node'unu, en son npx'i dene.
-    """
-    system_node = os.environ.get('SYSTEM_NODE_EXE') or shutil.which('node')
-
-    if system_node and os.path.exists(system_node):
-        # node ile lighthouse CLI'yi çalıştır
-        # Global lighthouse: node -e "require('lighthouse/cli/run.js')" veya npx
-        lh_cli = shutil.which('lighthouse')
-        if lh_cli:
-            node_cmd = f'"{system_node}" "{lh_cli}"'
-        else:
-            node_cmd = f'"{system_node}" -e "require(\'lighthouse/cli/run.js\')"'
-        return (
-            f'{node_cmd} "{url}" '
-            f'--output=html --output-path="{output_path}" '
-            f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
-            f'{extra_flags} --locale=tr --quiet'
-        )
-
-    # Fallback: npx
-    return (
-        f'npx lighthouse "{url}" '
+    common = (
         f'--output=html --output-path="{output_path}" '
         f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
         f'{extra_flags} --locale=tr --quiet'
     )
+
+    # 1. Electron'ın geçirdiği tam lighthouse.cmd yolu
+    lh_exe = os.environ.get('LIGHTHOUSE_EXE') or shutil.which('lighthouse')
+    if lh_exe and os.path.exists(lh_exe):
+        return f'"{lh_exe}" "{url}" {common}'
+
+    # 2. node + global lighthouse paketi
+    system_node = os.environ.get('SYSTEM_NODE_EXE') or shutil.which('node')
+    if system_node and os.path.exists(system_node):
+        return f'"{system_node}" -e "require(\'lighthouse/cli/run.js\')" "{url}" {common}'
+
+    # 3. Fallback: npx
+    return f'npx lighthouse "{url}" {common}'
 
 
 class AuditRequest(BaseModel):
