@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron')
 const path = require('path')
 const { spawn, execSync } = require('child_process')
 const { autoUpdater } = require('electron-updater')
@@ -54,6 +54,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: false,
     },
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     backgroundColor: '#020617',
@@ -67,6 +68,50 @@ function createWindow() {
   }
 
   mainWindow.on('closed', () => { mainWindow = null })
+
+  // Export URL'leri (xlsx, csv, xml, html, json) yeni pencere açmak yerine
+  // doğrudan "Farklı kaydet" dialogu ile indirir.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.includes('/api/maps/export/') || url.includes('/api/') ) {
+      mainWindow.webContents.downloadURL(url)
+      return { action: 'deny' }
+    }
+    return { action: 'deny' }
+  })
+
+  // Google Maps iframe'lerinin yüklenmesine izin ver
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ["default-src * 'unsafe-inline' 'unsafe-eval' data: blob:"],
+      },
+    })
+  })
+
+  session.defaultSession.on('will-download', (event, item) => {
+    const suggestedName = item.getFilename()
+    const ext = suggestedName.split('.').pop().toLowerCase()
+    const filterMap = {
+      xlsx: [{ name: 'Excel', extensions: ['xlsx'] }],
+      csv:  [{ name: 'CSV',   extensions: ['csv']  }],
+      json: [{ name: 'JSON',  extensions: ['json'] }],
+      xml:  [{ name: 'XML',   extensions: ['xml']  }],
+      html: [{ name: 'HTML',  extensions: ['html'] }],
+    }
+    const filters = filterMap[ext] || [{ name: 'Dosya', extensions: [ext || '*'] }]
+
+    const savePath = dialog.showSaveDialogSync(mainWindow, {
+      defaultPath: suggestedName,
+      filters,
+    })
+
+    if (savePath) {
+      item.setSavePath(savePath)
+    } else {
+      item.cancel()
+    }
+  })
 }
 
 function setupAutoUpdater() {
