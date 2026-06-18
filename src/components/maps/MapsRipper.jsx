@@ -303,6 +303,8 @@ export default function MapsRipper() {
                 selectedBusiness={selectedBusiness}
                 onSelectBusiness={handleMapSelectBusiness}
                 isDark={isDark}
+                selectedCity={selectedCity}
+                selectedDistricts={selectedDistricts}
               />
             </Suspense>
           </div>
