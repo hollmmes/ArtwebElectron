@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap } from '@vis.gl/react-google-maps'
 import { GOOGLE_MAPS_API_KEY } from '../../config'
+import { cityCoords } from '../../data/cityCoords'
 
 const DISTRICT_HIGHLIGHT_STYLE = {
   strokeColor: '#3b82f6',
@@ -37,13 +38,13 @@ function BoundaryLayer({ selectedDistricts, selectedCity }) {
     const bounds = new window.google.maps.LatLngBounds()
     let boundsExtended = false
 
-    // Polygon koordinatlarını deniz alanlarından kırp:
-    // Kuzey yönüne aşırı uzanan noktaları (karasuları) 90. percentile ile clamp et
+    // İlin merkez koordinatının kuzeyine 0.55 derece (~60km) ötesine çıkan
+    // noktaları keser — karasuları / deniz alanlarını poligon dışına atar
+    const cityLat = cityCoords[selectedCity]?.lat ?? 39.0
+    const maxAllowedLat = cityLat + 0.55
+
     function clipSeaCoords(ring) {
-      const lats = ring.map(([, lat]) => lat).sort((a, b) => a - b)
-      const p90idx = Math.floor(lats.length * 0.90)
-      const maxLat = lats[p90idx] ?? lats[lats.length - 1]
-      return ring.map(([lng, lat]) => [lng, Math.min(lat, maxLat)])
+      return ring.map(([lng, lat]) => [lng, Math.min(lat, maxAllowedLat)])
     }
 
     Promise.all(queries.map(async ({ q, level }) => {
