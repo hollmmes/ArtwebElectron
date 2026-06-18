@@ -68,21 +68,35 @@ def system_status():
         except ImportError:
             checks[pkg] = {"label": label, "installed": False, "version": None, "ok": False}
 
-    # Playwright Chromium — PLAYWRIGHT_BROWSERS_PATH env üzerinden kontrol (bundle'dan gelir)
+    # Playwright Chromium — önce bundle path, yoksa sistem Playwright cache'ini kontrol et
     chromium_ok = False
     try:
         browsers_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH', '')
-        if browsers_path and os.path.exists(browsers_path):
-            for d in os.listdir(browsers_path):
+        search_paths = []
+        if browsers_path:
+            search_paths.append(browsers_path)
+        # Dev modda Playwright'ın varsayılan cache dizinleri
+        home = os.path.expanduser('~')
+        search_paths += [
+            os.path.join(home, 'AppData', 'Local', 'ms-playwright'),
+            os.path.join(home, '.cache', 'ms-playwright'),
+        ]
+        for sp in search_paths:
+            if not sp or not os.path.exists(sp):
+                continue
+            for d in os.listdir(sp):
                 if not d.lower().startswith('chromium-'):
                     continue
-                base = os.path.join(browsers_path, d)
-                for sub in ('chrome-win', 'chrome-win64'):
-                    if os.path.exists(os.path.join(base, sub, 'chrome.exe')):
+                base = os.path.join(sp, d)
+                for sub in ('chrome-win', 'chrome-win64', 'chrome-linux', ''):
+                    exe = 'chrome.exe' if 'win' in sub or sub == '' else 'chrome'
+                    if os.path.exists(os.path.join(base, sub, exe) if sub else os.path.join(base, exe)):
                         chromium_ok = True
                         break
                 if chromium_ok:
                     break
+            if chromium_ok:
+                break
     except Exception:
         pass
     checks["playwright_chromium"] = {
