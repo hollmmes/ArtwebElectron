@@ -14,25 +14,17 @@ REPORTS_DIR = os.path.join(_app_data, 'ArtWebToolkit', 'lighthouse_reports')
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 
-def _get_lighthouse_cmd(url: str, output_path: str, extra_flags: str) -> str:
-    common = (
-        f'--output=html --output-path="{output_path}" '
-        f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
-        f'{extra_flags} --locale=tr --quiet'
-    )
-
-    # 1. Electron'ın geçirdiği tam lighthouse.cmd yolu
-    lh_exe = os.environ.get('LIGHTHOUSE_EXE') or shutil.which('lighthouse')
-    if lh_exe and os.path.exists(lh_exe):
-        return f'"{lh_exe}" "{url}" {common}'
-
-    # 2. node + global lighthouse paketi
-    system_node = os.environ.get('SYSTEM_NODE_EXE') or shutil.which('node')
-    if system_node and os.path.exists(system_node):
-        return f'"{system_node}" -e "require(\'lighthouse/cli/run.js\')" "{url}" {common}'
-
-    # 3. Fallback: npx
-    return f'npx lighthouse "{url}" {common}'
+def _build_env_with_node() -> dict:
+    """Production'da PyInstaller subprocess'i Node.js PATH'ini görmez.
+    SYSTEM_NODE_EXE üzerinden Node.js dizinini PATH'e ekle."""
+    env = os.environ.copy()
+    system_node = env.get('SYSTEM_NODE_EXE', '')
+    if system_node:
+        node_dir = os.path.dirname(system_node)
+        existing_path = env.get('PATH', '')
+        if node_dir not in existing_path:
+            env['PATH'] = node_dir + os.pathsep + existing_path
+    return env
 
 
 class AuditRequest(BaseModel):
@@ -61,9 +53,12 @@ async def run_audit(request: AuditRequest):
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Masaustu analizi baslatiliyor...', 'step': 'desktop_start', 'url': url})}\n\n"
 
-            desktop_cmd = _get_lighthouse_cmd(
-                url, desktop_path,
-                '--form-factor=desktop --screenEmulation.disabled --throttling-method=simulate --preset=desktop'
+            desktop_cmd = (
+                f'npx lighthouse "{url}" '
+                f'--output=html --output-path="{desktop_path}" '
+                f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
+                f'--form-factor=desktop --screenEmulation.disabled --throttling-method=simulate '
+                f'--preset=desktop --locale=tr --quiet'
             )
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Masaustu sayfasi yukleniyor ve olculuyor...', 'step': 'desktop_running', 'url': url})}\n\n"
@@ -71,6 +66,7 @@ async def run_audit(request: AuditRequest):
             try:
                 process = await asyncio.create_subprocess_shell(
                     desktop_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                    env=_build_env_with_node(),
                 )
                 stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=180)
             except asyncio.TimeoutError:
@@ -94,9 +90,12 @@ async def run_audit(request: AuditRequest):
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Mobil analizi baslatiliyor...', 'step': 'mobile_start', 'url': url})}\n\n"
 
-            mobile_cmd = _get_lighthouse_cmd(
-                url, mobile_path,
-                '--form-factor=mobile --screenEmulation.mobile --throttling-method=simulate'
+            mobile_cmd = (
+                f'npx lighthouse "{url}" '
+                f'--output=html --output-path="{mobile_path}" '
+                f'--chrome-flags="--headless --no-sandbox --disable-gpu --ignore-certificate-errors" '
+                f'--form-factor=mobile --screenEmulation.mobile --throttling-method=simulate '
+                f'--locale=tr --quiet'
             )
 
             yield f"data: {json.dumps({'type': 'status', 'message': 'Mobil emulasyon ve 4G simulasyonu aktif...', 'step': 'mobile_running', 'url': url})}\n\n"
@@ -104,6 +103,7 @@ async def run_audit(request: AuditRequest):
             try:
                 process = await asyncio.create_subprocess_shell(
                     mobile_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                    env=_build_env_with_node(),
                 )
                 stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=180)
             except asyncio.TimeoutError:
