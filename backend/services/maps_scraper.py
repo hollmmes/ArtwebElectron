@@ -261,7 +261,7 @@ async def extract_business_details(page, name: str, maps_url: str) -> dict | Non
 
                 # Scroll the review panel to load more
                 try:
-                    for _ in range(5):
+                    for _ in range(10):
                         await page.evaluate("""() => {
                             const panels = document.querySelectorAll('.m6QErb.DxyBCb, .m6QErb, [class*="review"]');
                             for (const el of panels) {
@@ -278,7 +278,7 @@ async def extract_business_details(page, name: str, maps_url: str) -> dict | Non
                 review_count = await review_items.count()
                 seen_ids = set()
                 seen_content = set()
-                for i in range(min(review_count, 20)):
+                for i in range(min(review_count, 50)):
                     try:
                         review_el = review_items.nth(i)
                         review_id = await review_el.get_attribute("data-review-id") or ""
@@ -325,7 +325,7 @@ async def extract_business_details(page, name: str, maps_url: str) -> dict | Non
                                     "text": review_text,
                                 })
 
-                        if len(reviews) >= 10:
+                        if len(reviews) >= 50:
                             break
                     except Exception:
                         continue

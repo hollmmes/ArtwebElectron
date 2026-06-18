@@ -7,7 +7,7 @@ from datetime import datetime
 
 FIELDS = [
     'name', 'category', 'address', 'phone', 'website', 'emails',
-    'rating', 'reviews_count', 'working_hours', 'about',
+    'rating', 'reviews_count', 'reviews', 'working_hours', 'about',
     'facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok',
     'maps_url', 'latitude', 'longitude'
 ]
@@ -21,6 +21,7 @@ FIELD_LABELS = {
     'emails': 'E-posta',
     'rating': 'Puan',
     'reviews_count': 'Yorum Sayısı',
+    'reviews': 'Yorumlar',
     'working_hours': 'Çalışma Saatleri',
     'about': 'Hakkında',
     'facebook': 'Facebook',
@@ -47,6 +48,7 @@ def _build_row(biz: dict) -> dict:
         'emails': '; '.join(emails) if isinstance(emails, list) else (emails or ''),
         'rating': biz.get('rating', '') if biz.get('rating') is not None else '',
         'reviews_count': biz.get('reviews_count', '') if biz.get('reviews_count') is not None else '',
+        'reviews': _format_reviews(biz.get('reviews', [])),
         'working_hours': _format_hours(biz.get('working_hours', {})),
         'about': biz.get('about', '') or '',
         'facebook': social.get('facebook', '') or '',
@@ -179,7 +181,7 @@ def export_to_xlsx(businesses: list[dict]) -> bytes:
                 cell.value = val
                 cell.font = link_font
                 cell.alignment = nowrap_align
-            elif field in ('working_hours', 'about', 'address'):
+            elif field in ('working_hours', 'about', 'address', 'reviews'):
                 cell.font = normal_font
                 cell.alignment = wrap_align
             else:
@@ -190,7 +192,7 @@ def export_to_xlsx(businesses: list[dict]) -> bytes:
     col_widths = {
         'name': 32, 'category': 20, 'address': 38, 'phone': 16,
         'website': 28, 'emails': 28, 'rating': 8, 'reviews_count': 10,
-        'working_hours': 34, 'about': 38,
+        'reviews': 60, 'working_hours': 34, 'about': 38,
         'facebook': 28, 'instagram': 28, 'twitter': 24,
         'youtube': 28, 'linkedin': 28, 'tiktok': 24,
         'maps_url': 28, 'latitude': 12, 'longitude': 12,
@@ -361,3 +363,21 @@ def _format_hours(hours: dict) -> str:
     if 'info' in hours:
         return hours['info']
     return '; '.join(f"{day}: {time}" for day, time in hours.items())
+
+
+def _format_reviews(reviews: list) -> str:
+    if not reviews:
+        return ''
+    parts = []
+    for r in reviews:
+        author = r.get('author', '') or ''
+        rating = r.get('rating')
+        text = r.get('text', '') or ''
+        line = f"[{author}"
+        if rating:
+            line += f" ★{rating}"
+        line += "]"
+        if text:
+            line += f" {text}"
+        parts.append(line)
+    return '\n'.join(parts)
