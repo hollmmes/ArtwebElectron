@@ -47,8 +47,12 @@ async def scrape_google_maps_stream(query: str, location: str = "", max_results:
             headless=True,
             args=[
                 '--ignore-certificate-errors',
+                '--ignore-ssl-errors',
                 '--disable-web-security',
                 '--allow-running-insecure-content',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
             ]
         )
         context = await browser.new_context(
