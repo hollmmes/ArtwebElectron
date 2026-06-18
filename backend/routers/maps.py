@@ -26,41 +26,66 @@ class EmailFinderRequest(BaseModel):
     website: str
 
 
+def _parse_locations(location: str) -> list[str]:
+    """
+    "Kadıköy, Beşiktaş, İstanbul" → ["Kadıköy İstanbul", "Beşiktaş İstanbul"]
+    "İstanbul" → ["İstanbul"]
+    "" → [""]
+    """
+    location = location.strip()
+    if not location:
+        return [""]
+    parts = [p.strip() for p in location.split(',') if p.strip()]
+    if len(parts) <= 1:
+        return [location]
+    # Son parça şehir, öncekiler ilçe
+    city = parts[-1]
+    districts = parts[:-1]
+    return [f"{d} {city}" for d in districts]
+
+
 @router.post("/search")
 async def search_businesses(request: SearchRequest):
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Arama kelimesi gerekli")
 
+    locations = _parse_locations(request.location)
     existing = await get_existing_businesses(request.query.strip(), request.location.strip())
     existing_keys = {(b["name"], b["address"]) for b in existing}
 
     async def event_stream():
         new_count = 0
         total_count = 0
+        seen_keys = set(existing_keys)
         try:
-            async for event in scrape_google_maps_stream(
-                request.query,
-                request.location,
-                request.max_results,
-            ):
-                if event["type"] == "result":
-                    business = event["data"]
-                    key = (business.get("name", ""), business.get("address", ""))
-                    try:
-                        is_new = await save_business(business, request.query.strip(), request.location.strip())
-                    except Exception:
-                        is_new = True
-                    event["data"]["is_new"] = is_new
-                    if key in existing_keys:
-                        event["data"]["is_new"] = False
-                    else:
-                        new_count += 1 if is_new else 0
-                    total_count += 1
+            for loc in locations:
+                async for event in scrape_google_maps_stream(
+                    request.query,
+                    loc,
+                    request.max_results,
+                ):
+                    if event["type"] == "result":
+                        business = event["data"]
+                        key = (business.get("name", ""), business.get("address", ""))
+                        if key in seen_keys:
+                            event["data"]["is_new"] = False
+                        else:
+                            seen_keys.add(key)
+                            try:
+                                is_new = await save_business(business, request.query.strip(), request.location.strip())
+                            except Exception:
+                                is_new = True
+                            event["data"]["is_new"] = is_new
+                            new_count += 1 if is_new else 0
+                        total_count += 1
+                    elif event["type"] == "done" and loc != locations[-1]:
+                        # Ara done event'lerini gizle, sadece son lokasyon bitince gönder
+                        continue
 
-                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
-                if event.get("type") == "done":
-                    await save_search(request.query.strip(), request.location.strip(), total_count, new_count)
+            await save_search(request.query.strip(), request.location.strip(), total_count, new_count)
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
