@@ -1,57 +1,29 @@
-import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap } from '@vis.gl/react-google-maps'
+import { GOOGLE_MAPS_API_KEY } from '../../config'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
-  iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
-  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
-})
-
-const highlightIcon = new L.Icon({
-  iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
-  iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
-  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
-  iconSize: [30, 49],
-  iconAnchor: [15, 49],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'marker-selected',
-})
-
-// Nominatim'den ilçe/şehir polygon'unu çek
-async function fetchBoundary(query) {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=geojson&limit=1&polygon_geojson=1`
-    const res = await fetch(url, { headers: { 'Accept-Language': 'tr' } })
-    const data = await res.json()
-    if (data.features && data.features.length > 0) {
-      const geom = data.features[0].geometry
-      if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
-        return data.features[0]
-      }
-    }
-  } catch {}
-  return null
+const DISTRICT_HIGHLIGHT_STYLE = {
+  strokeColor: '#3b82f6',
+  strokeOpacity: 0.9,
+  strokeWeight: 2.5,
+  fillColor: '#3b82f6',
+  fillOpacity: 0.1,
 }
 
-function BoundaryLayer({ selectedDistricts, selectedCity, isDark }) {
+function BoundaryLayer({ selectedDistricts, selectedCity }) {
   const map = useMap()
-  const layerRef = useRef(null)
+  const polygonsRef = useRef([])
   const prevKey = useRef('')
 
   useEffect(() => {
+    if (!map) return
     const key = selectedDistricts.join(',') + '|' + selectedCity
     if (key === prevKey.current) return
     prevKey.current = key
 
-    // Önceki layer'ı temizle
-    if (layerRef.current) {
-      map.removeLayer(layerRef.current)
-      layerRef.current = null
-    }
+    // Önceki polygon'ları temizle
+    polygonsRef.current.forEach(p => p.setMap(null))
+    polygonsRef.current = []
 
     if (!selectedCity) return
 
@@ -59,126 +31,156 @@ function BoundaryLayer({ selectedDistricts, selectedCity, isDark }) {
       ? selectedDistricts.map(d => `${d}, ${selectedCity}, Türkiye`)
       : [`${selectedCity}, Türkiye`]
 
-    Promise.all(queries.map(fetchBoundary)).then(features => {
-      const valid = features.filter(Boolean)
-      if (valid.length === 0) return
+    const bounds = new window.google.maps.LatLngBounds()
+    let boundsExtended = false
 
-      const geojson = {
-        type: 'FeatureCollection',
-        features: valid,
-      }
-
-      const layer = L.geoJSON(geojson, {
-        style: {
-          color: '#3b82f6',
-          weight: 2.5,
-          opacity: 0.9,
-          fillColor: '#3b82f6',
-          fillOpacity: isDark ? 0.12 : 0.08,
-        },
-      })
-
-      layer.addTo(map)
-      layerRef.current = layer
-
-      // Sınıra fit et (marker yoksa)
+    Promise.all(queries.map(async (q) => {
       try {
-        map.fitBounds(layer.getBounds(), { padding: [30, 30], maxZoom: 13 })
-      } catch {}
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=geojson&limit=1&polygon_geojson=1`
+        const res = await fetch(url, { headers: { 'Accept-Language': 'tr' } })
+        const data = await res.json()
+        if (!data.features?.length) return null
+        const geom = data.features[0].geometry
+        if (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon') return null
+        return geom
+      } catch { return null }
+    })).then(geoms => {
+      geoms.filter(Boolean).forEach(geom => {
+        const rings = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
+        rings.forEach(ring => {
+          const path = ring[0].map(([lng, lat]) => {
+            const pt = { lat, lng }
+            bounds.extend(pt)
+            boundsExtended = true
+            return pt
+          })
+          const polygon = new window.google.maps.Polygon({
+            paths: path,
+            ...DISTRICT_HIGHLIGHT_STYLE,
+            map,
+          })
+          polygonsRef.current.push(polygon)
+        })
+      })
+      if (boundsExtended && polygonsRef.current.length > 0) {
+        map.fitBounds(bounds, 40)
+      }
     })
 
     return () => {
-      if (layerRef.current) {
-        map.removeLayer(layerRef.current)
-        layerRef.current = null
-      }
+      polygonsRef.current.forEach(p => p.setMap(null))
+      polygonsRef.current = []
     }
-  }, [selectedDistricts.join(','), selectedCity])
+  }, [map, selectedDistricts.join(','), selectedCity])
 
   return null
 }
 
-function MapFlyTo({ businesses, cityCoord }) {
+function MarkerLayer({ businesses, selectedBusiness, onSelectBusiness }) {
   const map = useMap()
+  const [openInfo, setOpenInfo] = useState(null)
   const prevCount = useRef(0)
 
   useEffect(() => {
-    if (businesses.length > 0 && businesses.length !== prevCount.current) {
-      prevCount.current = businesses.length
-      const valid = businesses.filter(b => b.latitude && b.longitude)
-      if (valid.length === 0) return
-      if (valid.length === 1) {
-        map.flyTo([valid[0].latitude, valid[0].longitude], 14, { animate: true, duration: 1 })
-        return
-      }
-      const bounds = L.latLngBounds(valid.map(b => [b.latitude, b.longitude]))
-      map.flyToBounds(bounds, { padding: [40, 40], animate: true, duration: 1 })
+    if (!map || businesses.length === 0) return
+    if (businesses.length === prevCount.current) return
+    prevCount.current = businesses.length
+
+    const valid = businesses.filter(b => b.latitude && b.longitude)
+    if (valid.length === 0) return
+
+    if (valid.length === 1) {
+      map.panTo({ lat: valid[0].latitude, lng: valid[0].longitude })
+      map.setZoom(15)
+      return
     }
-  }, [businesses.length])
+    const bounds = new window.google.maps.LatLngBounds()
+    valid.forEach(b => bounds.extend({ lat: b.latitude, lng: b.longitude }))
+    map.fitBounds(bounds, 60)
+  }, [businesses.length, map])
+
+  const validBusinesses = businesses.filter(b => b.latitude && b.longitude)
+
+  return (
+    <>
+      {validBusinesses.map((biz, i) => {
+        const isSelected = selectedBusiness === biz
+        return (
+          <AdvancedMarker
+            key={i}
+            position={{ lat: biz.latitude, lng: biz.longitude }}
+            onClick={() => { onSelectBusiness(biz); setOpenInfo(biz) }}
+          >
+            <Pin
+              background={isSelected ? '#1d4ed8' : '#3b82f6'}
+              borderColor={isSelected ? '#1e40af' : '#2563eb'}
+              glyphColor="#fff"
+              scale={isSelected ? 1.3 : 1}
+            />
+          </AdvancedMarker>
+        )
+      })}
+
+      {openInfo && openInfo.latitude && openInfo.longitude && (
+        <InfoWindow
+          position={{ lat: openInfo.latitude, lng: openInfo.longitude }}
+          onCloseClick={() => setOpenInfo(null)}
+          pixelOffset={[0, -40]}
+        >
+          <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.6, maxWidth: 220 }}>
+            <strong style={{ fontSize: 14, display: 'block', marginBottom: 2 }}>{openInfo.name}</strong>
+            {openInfo.category && <div style={{ color: '#64748b', fontSize: 12 }}>{openInfo.category}</div>}
+            {openInfo.address && <div style={{ marginTop: 4 }}>{openInfo.address}</div>}
+            {openInfo.phone && <div>📞 {openInfo.phone}</div>}
+            {openInfo.rating && <div>⭐ {openInfo.rating}{openInfo.reviews_count ? ` (${openInfo.reviews_count} yorum)` : ''}</div>}
+          </div>
+        </InfoWindow>
+      )}
+    </>
+  )
+}
+
+function MapController({ cityCoord, businesses }) {
+  const map = useMap()
 
   useEffect(() => {
-    if (cityCoord && businesses.length === 0) {
-      map.flyTo([cityCoord.lat, cityCoord.lng], cityCoord.zoom, { animate: false })
-    }
-  }, [cityCoord])
+    if (!map || !cityCoord || businesses.length > 0) return
+    map.panTo({ lat: cityCoord.lat, lng: cityCoord.lng })
+    map.setZoom(cityCoord.zoom)
+  }, [cityCoord, map])
 
   return null
 }
 
-export default function BusinessMap({ businesses, cityCoord, selectedBusiness, onSelectBusiness, isDark, selectedCity, selectedDistricts }) {
-  const defaultCenter = cityCoord ? [cityCoord.lat, cityCoord.lng] : [39.0, 35.0]
+export default function BusinessMap({
+  businesses, cityCoord, selectedBusiness, onSelectBusiness,
+  isDark, selectedCity, selectedDistricts,
+}) {
+  const defaultCenter = cityCoord ? { lat: cityCoord.lat, lng: cityCoord.lng } : { lat: 39.0, lng: 35.0 }
   const defaultZoom = cityCoord ? cityCoord.zoom : 6
-  const validBusinesses = businesses.filter(b => b.latitude && b.longitude)
 
   return (
-    <div className="relative w-full h-full">
-      <MapContainer
-        center={defaultCenter}
-        zoom={defaultZoom}
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <Map
+        defaultCenter={defaultCenter}
+        defaultZoom={defaultZoom}
+        mapId={isDark ? 'dark-map' : undefined}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
         style={{ width: '100%', height: '100%', borderRadius: '0.5rem' }}
-        zoomControl={true}
+        colorScheme={isDark ? 'DARK' : 'LIGHT'}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url={isDark
-            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-          }
-        />
-
+        <MapController cityCoord={cityCoord} businesses={businesses} />
         <BoundaryLayer
           selectedDistricts={selectedDistricts || []}
           selectedCity={selectedCity || ''}
-          isDark={isDark}
         />
-
-        <MapFlyTo businesses={validBusinesses} cityCoord={cityCoord} />
-
-        {validBusinesses.map((biz, i) => (
-          <Marker
-            key={i}
-            position={[biz.latitude, biz.longitude]}
-            icon={selectedBusiness === biz ? highlightIcon : undefined}
-            eventHandlers={{ click: () => onSelectBusiness(biz) }}
-          >
-            <Popup maxWidth={240}>
-              <div style={{ fontFamily: 'sans-serif', fontSize: 13, lineHeight: 1.5 }}>
-                <strong style={{ fontSize: 14 }}>{biz.name}</strong>
-                {biz.category && <div style={{ color: '#64748b', fontSize: 12 }}>{biz.category}</div>}
-                {biz.address && <div style={{ marginTop: 4 }}>{biz.address}</div>}
-                {biz.phone && <div>📞 {biz.phone}</div>}
-                {biz.rating && <div>⭐ {biz.rating}{biz.reviews_count ? ` (${biz.reviews_count} yorum)` : ''}</div>}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-
-      {validBusinesses.length < businesses.length && businesses.length > 0 && (
-        <div className="absolute bottom-2 left-2 z-[1000] bg-black/60 text-white text-xs px-2 py-1 rounded">
-          {validBusinesses.length}/{businesses.length} işletme haritada
-        </div>
-      )}
-    </div>
+        <MarkerLayer
+          businesses={businesses}
+          selectedBusiness={selectedBusiness}
+          onSelectBusiness={onSelectBusiness}
+        />
+      </Map>
+    </APIProvider>
   )
 }
