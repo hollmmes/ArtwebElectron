@@ -19,9 +19,17 @@ export default function Lighthouse() {
   const [error, setError] = useState('')
   const [history, setHistory] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [lighthouseInstalling, setLighthouseInstalling] = useState(false)
 
   useEffect(() => {
     loadHistory()
+    // Lighthouse arka planda kuruluyorsa bildir
+    if (window.electronAPI?.onLighthouseInstalled) {
+      setLighthouseInstalling(true)
+      window.electronAPI.onLighthouseInstalled(() => {
+        setLighthouseInstalling(false)
+      })
+    }
   }, [])
 
   const loadHistory = async () => {
@@ -183,6 +191,15 @@ export default function Lighthouse() {
 
   return (
     <div className="h-full flex flex-col gap-4">
+
+      {/* Lighthouse kurulum bildirimi */}
+      {lighthouseInstalling && (
+        <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm shrink-0 ${isDark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}>
+          <Loader2 size={15} className="animate-spin shrink-0" />
+          Lighthouse ilk kez kuruluyor, bu işlem birkaç dakika sürebilir. Kurulum tamamlandığında otomatik kullanıma hazır olacak.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div>
