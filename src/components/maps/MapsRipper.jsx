@@ -290,8 +290,8 @@ export default function MapsRipper() {
 
         {/* Harita */}
         {showMap && (
-          <div className={`shrink-0 rounded-xl overflow-hidden border ${isDark ? 'border-slate-700/60' : 'border-gray-200 shadow-sm'}`}
-            style={{ height: results.length > 0 ? '420px' : '460px' }}>
+          <div className={`rounded-xl overflow-hidden border ${isDark ? 'border-slate-700/60' : 'border-gray-200 shadow-sm'} ${results.length > 0 ? 'shrink-0' : 'flex-1'}`}
+            style={{ height: results.length > 0 ? '420px' : undefined }}>
             <Suspense fallback={
               <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
                 <Loader2 size={24} className="animate-spin text-blue-500" />
