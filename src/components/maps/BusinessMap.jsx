@@ -4,10 +4,10 @@ import { GOOGLE_MAPS_API_KEY } from '../../config'
 
 const DISTRICT_HIGHLIGHT_STYLE = {
   strokeColor: '#3b82f6',
-  strokeOpacity: 0.9,
-  strokeWeight: 2.5,
+  strokeOpacity: 0.85,
+  strokeWeight: 2,
   fillColor: '#3b82f6',
-  fillOpacity: 0.1,
+  fillOpacity: 0.04,
 }
 
 function BoundaryLayer({ selectedDistricts, selectedCity }) {
@@ -37,14 +37,21 @@ function BoundaryLayer({ selectedDistricts, selectedCity }) {
     const bounds = new window.google.maps.LatLngBounds()
     let boundsExtended = false
 
+    // Polygon koordinatlarını deniz alanlarından kırp:
+    // Kuzey yönüne aşırı uzanan noktaları (karasuları) 90. percentile ile clamp et
+    function clipSeaCoords(ring) {
+      const lats = ring.map(([, lat]) => lat).sort((a, b) => a - b)
+      const p90idx = Math.floor(lats.length * 0.90)
+      const maxLat = lats[p90idx] ?? lats[lats.length - 1]
+      return ring.map(([lng, lat]) => [lng, Math.min(lat, maxLat)])
+    }
+
     Promise.all(queries.map(async ({ q, level }) => {
       try {
-        // Önce admin_level ile ara
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=geojson&limit=5&polygon_geojson=1`
         const res = await fetch(url, { headers: { 'Accept-Language': 'tr' } })
         const data = await res.json()
         if (!data.features?.length) return null
-        // admin_level eşleşeni bul, yoksa ilk polygon'u al
         const match = data.features.find(f =>
           f.properties?.['admin_level'] == level &&
           (f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon')
@@ -58,7 +65,8 @@ function BoundaryLayer({ selectedDistricts, selectedCity }) {
       geoms.filter(Boolean).forEach(geom => {
         const rings = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
         rings.forEach(ring => {
-          const path = ring[0].map(([lng, lat]) => {
+          const clipped = clipSeaCoords(ring[0])
+          const path = clipped.map(([lng, lat]) => {
             const pt = { lat, lng }
             bounds.extend(pt)
             boundsExtended = true
