@@ -27,22 +27,32 @@ function BoundaryLayer({ selectedDistricts, selectedCity }) {
 
     if (!selectedCity) return
 
-    const queries = selectedDistricts.length > 0
-      ? selectedDistricts.map(d => `${d}, ${selectedCity}, Türkiye`)
-      : [`${selectedCity}, Türkiye`]
+    // İl sorgusu: admin_level=4, ilçe sorgusu: admin_level=6
+    const isDistrictQuery = selectedDistricts.length > 0
+    const adminLevel = isDistrictQuery ? 6 : 4
+    const queries = isDistrictQuery
+      ? selectedDistricts.map(d => ({ q: `${d}, ${selectedCity}, Türkiye`, level: 6 }))
+      : [{ q: `${selectedCity}, Türkiye`, level: 4 }]
 
     const bounds = new window.google.maps.LatLngBounds()
     let boundsExtended = false
 
-    Promise.all(queries.map(async (q) => {
+    Promise.all(queries.map(async ({ q, level }) => {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=geojson&limit=1&polygon_geojson=1`
+        // Önce admin_level ile ara
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=geojson&limit=5&polygon_geojson=1`
         const res = await fetch(url, { headers: { 'Accept-Language': 'tr' } })
         const data = await res.json()
         if (!data.features?.length) return null
-        const geom = data.features[0].geometry
-        if (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon') return null
-        return geom
+        // admin_level eşleşeni bul, yoksa ilk polygon'u al
+        const match = data.features.find(f =>
+          f.properties?.['admin_level'] == level &&
+          (f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon')
+        ) || data.features.find(f =>
+          f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon'
+        )
+        if (!match) return null
+        return match.geometry
       } catch { return null }
     })).then(geoms => {
       geoms.filter(Boolean).forEach(geom => {
