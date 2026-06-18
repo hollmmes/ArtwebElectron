@@ -65,7 +65,14 @@ async def scrape_google_maps_stream(query: str, location: str = "", max_results:
         yield {"type": "status", "message": "Google Maps aciliyor..."}
 
         url = f"https://www.google.com/maps/search/{search_term.replace(' ', '+')}"
-        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        for attempt in range(3):
+            try:
+                await page.goto(url, wait_until="commit", timeout=60000)
+                break
+            except Exception as e:
+                if attempt == 2:
+                    raise
+                await page.wait_for_timeout(2000)
         await page.wait_for_timeout(3000)
 
         try:
@@ -123,7 +130,14 @@ async def scrape_google_maps_stream(query: str, location: str = "", max_results:
                 detail_page = None
                 try:
                     detail_page = await context.new_page()
-                    await detail_page.goto(link["href"], wait_until="domcontentloaded", timeout=30000)
+                    for attempt in range(3):
+                        try:
+                            await detail_page.goto(link["href"], wait_until="commit", timeout=30000)
+                            break
+                        except Exception:
+                            if attempt == 2:
+                                raise
+                            await detail_page.wait_for_timeout(1500)
                     try:
                         await detail_page.wait_for_selector('[data-item-id="address"], [data-item-id*="phone"]', timeout=8000)
                     except Exception:

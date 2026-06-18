@@ -58,7 +58,10 @@ async def search_businesses(request: SearchRequest):
         total_count = 0
         seen_keys = set(existing_keys)
         try:
-            for loc in locations:
+            for loc_idx, loc in enumerate(locations):
+                if len(locations) > 1:
+                    loc_label = loc.split()[0] if loc else loc
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'{loc_label} taranıyor... ({loc_idx+1}/{len(locations)})'}, ensure_ascii=False)}\n\n"
                 async for event in scrape_google_maps_stream(
                     request.query,
                     loc,
