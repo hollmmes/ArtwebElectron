@@ -165,7 +165,7 @@ function startBackend() {
     backendEnv.PLAYWRIGHT_BROWSERS_PATH = path.join(process.resourcesPath, 'backend', 'ms-playwright')
   }
 
-  // Node.js ve Lighthouse yollarını backend'e geç
+  // Node.js ve Lighthouse yollarını backend'e geç, yoksa global kur
   try {
     let systemNode = ''
     let lighthouseExe = ''
@@ -175,6 +175,24 @@ function startBackend() {
     try {
       lighthouseExe = execSync('where lighthouse', { windowsHide: true, encoding: 'utf-8', shell: true }).split('\n')[0].trim()
     } catch {}
+
+    // Lighthouse kurulu değilse arka planda kur
+    if (systemNode && !lighthouseExe) {
+      console.log('[Lighthouse] Kurulu değil, yükleniyor...')
+      const npmExe = path.join(path.dirname(systemNode), 'npm.cmd')
+      const installProc = spawn(npmExe, ['install', '-g', 'lighthouse'], {
+        shell: true, windowsHide: true, detached: false,
+      })
+      installProc.on('close', (code) => {
+        if (code === 0) {
+          console.log('[Lighthouse] Kurulum tamamlandı.')
+          mainWindow?.webContents.send('lighthouse-installed')
+        } else {
+          console.error('[Lighthouse] Kurulum başarısız:', code)
+        }
+      })
+    }
+
     if (systemNode) backendEnv.SYSTEM_NODE_EXE = systemNode
     if (lighthouseExe) backendEnv.LIGHTHOUSE_EXE = lighthouseExe
   } catch {}

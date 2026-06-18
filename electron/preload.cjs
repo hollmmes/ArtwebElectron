@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateError: (callback) => ipcRenderer.on('update-error', (_e, err) => callback(err)),
 
   onStartupCheck: (callback) => ipcRenderer.on('startup-check', (_e, data) => callback(data)),
+  onLighthouseInstalled: (callback) => ipcRenderer.on('lighthouse-installed', () => callback()),
 })
