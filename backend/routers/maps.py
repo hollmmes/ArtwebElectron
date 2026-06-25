@@ -8,7 +8,8 @@ from database import (
     save_business, get_existing_businesses, save_search,
     get_search_history, get_search_history_grouped,
     get_all_businesses, get_businesses_by_category,
-    delete_business, update_business_emails, backfill_coordinates
+    delete_business, update_business_emails, backfill_coordinates,
+    get_businesses_geo
 )
 import json
 
@@ -127,6 +128,13 @@ async def list_businesses(
         return {"total": len(businesses), "businesses": businesses}
     result = await get_all_businesses(limit, offset, search)
     return result
+
+
+@router.get("/businesses/geo")
+async def list_businesses_geo():
+    """Harita için hafif işletme listesi (sadece koordinatlı kayıtlar, temel alanlar)."""
+    businesses = await get_businesses_geo()
+    return {"total": len(businesses), "businesses": businesses}
 
 
 @router.post("/backfill-coordinates")
