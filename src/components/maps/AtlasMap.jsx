@@ -187,6 +187,16 @@ const MINIMAL_MAP_STYLES = [
   { featureType: 'administrative', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
 ]
 
+// styles'ı prop yerine setOptions ile uygular (mapId/colorScheme ile çakışmayı önler)
+function StyleController() {
+  const map = useMap()
+  useEffect(() => {
+    if (!map) return
+    map.setOptions({ styles: MINIMAL_MAP_STYLES, clickableIcons: false })
+  }, [map])
+  return null
+}
+
 export default function AtlasMap({
   businesses, getCategory, selectedBusiness, onSelectBusiness, focusTarget, isDark,
 }) {
@@ -197,11 +207,10 @@ export default function AtlasMap({
         defaultZoom={6}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        clickableIcons={false}
-        styles={MINIMAL_MAP_STYLES}
         style={{ width: '100%', height: '100%', borderRadius: '0.5rem' }}
         colorScheme={isDark ? 'DARK' : 'LIGHT'}
       >
+        <StyleController />
         <ClusterLayer
           businesses={businesses}
           getCategory={getCategory}
