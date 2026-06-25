@@ -69,6 +69,12 @@ export async function getBusinesses({ limit = 100, offset = 0, query = '', locat
   return response.json()
 }
 
+export async function backfillCoordinates() {
+  const response = await fetch(`${API_BASE}/api/maps/backfill-coordinates`, { method: 'POST' })
+  if (!response.ok) throw new Error('Onarım başarısız')
+  return response.json()
+}
+
 export async function deleteBusiness(id) {
   const response = await fetch(`${API_BASE}/api/maps/businesses/${id}`, { method: 'DELETE' })
   if (!response.ok) throw new Error('Silinemedi')
