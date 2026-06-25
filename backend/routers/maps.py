@@ -8,7 +8,7 @@ from database import (
     save_business, get_existing_businesses, save_search,
     get_search_history, get_search_history_grouped,
     get_all_businesses, get_businesses_by_category,
-    delete_business, update_business_emails
+    delete_business, update_business_emails, backfill_coordinates
 )
 import json
 
@@ -116,7 +116,7 @@ async def business_categories():
 
 @router.get("/businesses")
 async def list_businesses(
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(default=100, ge=1, le=10000),
     offset: int = Query(default=0, ge=0),
     query: str = Query(default=""),
     location: str = Query(default=""),
@@ -126,6 +126,13 @@ async def list_businesses(
         businesses = await get_existing_businesses(query, location)
         return {"total": len(businesses), "businesses": businesses}
     result = await get_all_businesses(limit, offset, search)
+    return result
+
+
+@router.post("/backfill-coordinates")
+async def backfill_business_coordinates():
+    """Mevcut kayıtlardaki maps_url'den lat/lng'leri parse edip günceller."""
+    result = await backfill_coordinates()
     return result
 
 

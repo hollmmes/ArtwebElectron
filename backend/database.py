@@ -280,6 +280,39 @@ async def get_businesses_by_category() -> list[dict]:
         await db.close()
 
 
+async def backfill_coordinates() -> dict:
+    """maps_url'ü dolu ama lat/lng boş olan kayıtların koordinatlarını URL'den parse edip günceller."""
+    import re
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            "SELECT id, maps_url FROM businesses WHERE (latitude IS NULL OR longitude IS NULL) AND maps_url IS NOT NULL AND maps_url != ''"
+        )
+        rows = await cursor.fetchall()
+        updated = 0
+        for row in rows:
+            url = row["maps_url"]
+            lat, lng = None, None
+            m = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', url)
+            if m:
+                lat, lng = float(m.group(1)), float(m.group(2))
+            else:
+                lat_m = re.search(r'!3d(-?\d+\.\d+)', url)
+                lng_m = re.search(r'!4d(-?\d+\.\d+)', url)
+                if lat_m and lng_m:
+                    lat, lng = float(lat_m.group(1)), float(lng_m.group(1))
+            if lat is not None and lng is not None:
+                await db.execute(
+                    "UPDATE businesses SET latitude = ?, longitude = ? WHERE id = ?",
+                    (lat, lng, row["id"])
+                )
+                updated += 1
+        await db.commit()
+        return {"checked": len(rows), "updated": updated}
+    finally:
+        await db.close()
+
+
 async def delete_business(business_id: int) -> bool:
     db = await get_db()
     try:

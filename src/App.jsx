@@ -7,6 +7,7 @@ import HomeDashboard from './components/dashboard/HomeDashboard'
 import Dashboard from './components/dashboard/Dashboard'
 import MapsRipper from './components/maps/MapsRipper'
 import MapsHistory from './components/maps/MapsHistory'
+import BusinessAtlas from './components/maps/BusinessAtlas'
 import Lighthouse from './components/lighthouse/Lighthouse'
 import Tracking from './components/tracking/Tracking'
 import Settings from './components/Settings'
@@ -31,6 +32,8 @@ export default function App() {
         return <MapsRipper />
       case 'maps-history':
         return <MapsHistory />
+      case 'maps-atlas':
+        return <BusinessAtlas />
       case 'lighthouse':
         return <Lighthouse />
       case 'tracking':

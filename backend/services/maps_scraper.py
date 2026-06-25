@@ -237,8 +237,17 @@ async def extract_business_details(page, name: str, maps_url: str) -> dict | Non
         # Fotograf URL'leri
         business["photos"] = await extract_photos(page)
 
-        # Konum (lat/lng)
-        business["latitude"], business["longitude"] = extract_coordinates(maps_url)
+        # Konum (lat/lng) — önce yüklenen sayfanın güncel URL'ini dene, sonra link href'ine düş
+        lat, lng = None, None
+        try:
+            current_url = page.url
+            if current_url:
+                lat, lng = extract_coordinates(current_url)
+        except Exception:
+            pass
+        if lat is None or lng is None:
+            lat, lng = extract_coordinates(maps_url)
+        business["latitude"], business["longitude"] = lat, lng
 
         # Email (Maps uzerinden)
         emails = []

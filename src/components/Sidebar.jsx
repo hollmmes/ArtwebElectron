@@ -1,4 +1,4 @@
-import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid, Globe, Shield } from 'lucide-react'
+import { MapPin, PanelLeftClose, PanelLeftOpen, Settings, History, ChevronDown, Zap, LayoutGrid, Globe, Shield, Map as MapIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -21,6 +21,7 @@ const modules = [
     icon: MapPin,
     children: [
       { id: 'maps-history', name: 'Gecmis Sonuclar', icon: History },
+      { id: 'maps-atlas', name: 'Veri Haritasi', icon: MapIcon },
     ],
   },
   {
