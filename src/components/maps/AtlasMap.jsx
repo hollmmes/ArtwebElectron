@@ -177,6 +177,16 @@ function FocusController({ focusTarget }) {
   return null
 }
 
+// Sade harita: POI/işyeri/transit etiketlerini gizler, kalabalığı azaltır
+const MINIMAL_MAP_STYLES = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit.station', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+]
+
 export default function AtlasMap({
   businesses, getCategory, selectedBusiness, onSelectBusiness, focusTarget, isDark,
 }) {
@@ -185,9 +195,10 @@ export default function AtlasMap({
       <GoogleMap
         defaultCenter={{ lat: 39.0, lng: 35.0 }}
         defaultZoom={6}
-        mapId={isDark ? 'dark-map' : undefined}
         gestureHandling="greedy"
         disableDefaultUI={false}
+        clickableIcons={false}
+        styles={MINIMAL_MAP_STYLES}
         style={{ width: '100%', height: '100%', borderRadius: '0.5rem' }}
         colorScheme={isDark ? 'DARK' : 'LIGHT'}
       >
