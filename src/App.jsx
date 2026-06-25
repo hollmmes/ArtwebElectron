@@ -11,6 +11,7 @@ import BusinessAtlas from './components/maps/BusinessAtlas'
 import Lighthouse from './components/lighthouse/Lighthouse'
 import Tracking from './components/tracking/Tracking'
 import Settings from './components/Settings'
+import ErrorBoundary from './components/ErrorBoundary'
 
 export default function App() {
   const { theme } = useTheme()
@@ -56,7 +57,9 @@ export default function App() {
           onModuleChange={setActiveModule}
         />
         <main className={`flex-1 overflow-auto p-6 ${theme === 'dark' ? 'bg-slate-950' : 'bg-gray-50'}`}>
-          {renderModule()}
+          <ErrorBoundary resetKey={activeModule} isDark={theme === 'dark'}>
+            {renderModule()}
+          </ErrorBoundary>
         </main>
       </div>
     </div>
