@@ -280,6 +280,23 @@ async def get_businesses_by_category() -> list[dict]:
         await db.close()
 
 
+async def get_businesses_geo() -> list[dict]:
+    """Harita için hafif kayıtlar: yalnızca koordinatı olan işletmeler ve temel alanlar.
+    JSON parse yapmaz, büyük alanları (reviews/photos vb.) döndürmez."""
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            """SELECT id, name, latitude, longitude, category, query, location,
+                      phone, rating, reviews_count, address, website
+               FROM businesses
+               WHERE latitude IS NOT NULL AND longitude IS NOT NULL"""
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        await db.close()
+
+
 async def backfill_coordinates() -> dict:
     """maps_url'ü dolu ama lat/lng boş olan kayıtların koordinatlarını URL'den parse edip günceller."""
     import re

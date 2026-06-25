@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Suspense, lazy, useCallback } from 'react'
 import { Map as MapIcon, Loader2, Search, X, MapPin, Phone, Star, Tag, RefreshCw, Filter, Wrench } from 'lucide-react'
-import { getBusinesses, backfillCoordinates } from '../../utils/api'
+import { getBusinessesGeo, backfillCoordinates } from '../../utils/api'
 import { useTheme } from '../../contexts/ThemeContext'
 import BusinessDetail from './BusinessDetail'
 import { categoryColor } from './categoryColor'
@@ -46,7 +46,7 @@ export default function BusinessAtlas() {
     setLoading(true)
     setError('')
     try {
-      const data = await getBusinesses({ limit: 5000, offset: 0 })
+      const data = await getBusinessesGeo()
       setBusinesses(data.businesses || [])
     } catch (err) {
       setError(err.message || 'Veriler yüklenemedi')
